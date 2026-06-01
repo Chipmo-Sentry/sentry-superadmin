@@ -1,0 +1,26 @@
+node_modules
+dist
+.git
+.gitignore
+.vscode
+.idea
+*.swp
+.DS_Store
+Thumbs.db
+
+# Env — supply via Railway env vars at build/runtime
+.env
+.env.*
+!.env.example
+
+# Logs
+*.log
+.vite-dev.log
+npm-debug.log*
+
+# Tooling caches
+.cache
+.eslintcache
+
+# Docs not needed in the image
+LICENSE

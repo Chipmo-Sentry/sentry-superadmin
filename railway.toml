@@ -1,0 +1,20 @@
+# Railway deployment config — https://docs.railway.com/reference/config-as-code
+[build]
+builder = "DOCKERFILE"
+dockerfilePath = "Dockerfile"
+
+[deploy]
+healthcheckPath = "/"
+healthcheckTimeout = 30
+restartPolicyType = "ON_FAILURE"
+restartPolicyMaxRetries = 5
+
+# Required build/runtime env vars (set in Railway dashboard):
+#   VITE_API_BASE_URL  — backend origin, baked at build time
+#                        e.g. https://sentry-backend-production-4a8f.up.railway.app
+#   PORT               — provided by Railway
+#
+# NOTE (auth): backend cookies are httpOnly + sameSite=lax. Cross-site XHR from
+# a different *.up.railway.app subdomain will NOT send them. Real super-admin
+# login needs same parent domain (admin.sentry.chipmo.mn + api.sentry.chipmo.mn)
+# or a token-based fallback. Tracked as the M2 same-site constraint.
