@@ -41,14 +41,19 @@ WORKDIR /app
 ENV NODE_ENV=production \
     PORT=8080
 
-RUN apk add --no-cache curl && npm i -g serve@14
+RUN apk add --no-cache curl
 
+# Static dist + the proxy server + its node_modules (express,
+# http-proxy-middleware). node_modules is copied from build because the
+# package.json has a file: ui-kit dep that can't resolve in a clean runtime.
 COPY --from=build /app/sentry-superadmin/dist ./dist
+COPY --from=build /app/sentry-superadmin/node_modules ./node_modules
+COPY --from=build /app/sentry-superadmin/server.mjs ./server.mjs
+COPY --from=build /app/sentry-superadmin/package.json ./package.json
 
 EXPOSE 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
     CMD curl -fsS http://127.0.0.1:${PORT:-8080}/ -o /dev/null || exit 1
 
-# `-s` = single-page-app fallback (all routes → index.html)
-CMD ["sh", "-c", "serve -s dist -l ${PORT:-8080}"]
+CMD ["node", "server.mjs"]
