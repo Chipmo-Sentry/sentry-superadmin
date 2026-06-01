@@ -6,11 +6,12 @@ dist-ssr
 .env.*
 !.env.example
 
-# Editor
+# Editor / tooling
 .vscode/*
 !.vscode/extensions.json
 .idea
 .DS_Store
+.claude/
 
 # Logs
 *.log
