@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build:
+    name: Lint + typecheck + build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node 22
+        uses: actions/setup-node@v4
+        with:
+          node-version: "22"
+          cache: "npm"
+
+      - name: Build ui-kit (file: dependency)
+        # ui-kit is a public sibling repo consumed via file:../sentry-ui-kit.
+        # Clone + build it so the named exports + dist/styles.css resolve for
+        # typecheck and the Vite build (a stub would miss the real exports).
+        run: |
+          git clone --depth 1 --branch main \
+            https://github.com/Chipmo-Sentry/sentry-ui-kit.git ../sentry-ui-kit
+          (cd ../sentry-ui-kit && npm ci --no-audit --no-fund && npm run build)
+
+      - name: Install (npm ci)
+        run: npm ci --no-audit --no-fund
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Build (Vite)
+        run: npm run build
+        env:
+          VITE_API_BASE_URL: "http://localhost:8000"

@@ -1,0 +1,14 @@
+/* Tailwind v4 — scans this SPA's source and emits the utility classes used in
+ * our own markup (p-8, grid-cols-N, responsive prefixes, etc.). Without this,
+ * only the narrow subset baked into ui-kit's dist/styles.css would resolve. */
+@import "tailwindcss";
+
+/* Shared @theme tokens (Chipmo brand colors, typography) + ui-kit component
+ * utility classes. Imported AFTER tailwindcss so token overrides win. */
+@import "@chipmo-sentry/ui-kit/styles.css";
+
+html,
+body,
+#root {
+  height: 100%;
+}
