@@ -13,13 +13,14 @@ const distDir = path.join(path.dirname(fileURLToPath(import.meta.url)), "dist");
 
 const app = express();
 
+// Mount at root with a pathFilter so Express does NOT strip the /api prefix
+// (backend routes are /api/v1/...). Non-/api requests fall through to static.
 app.use(
-  "/api",
   createProxyMiddleware({
     target: BACKEND_ORIGIN,
     changeOrigin: true,
     xfwd: true,
-    // keep the /api prefix — backend routes are /api/v1/...
+    pathFilter: (pathname) => pathname.startsWith("/api"),
   }),
 );
 
