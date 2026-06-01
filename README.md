@@ -53,9 +53,26 @@ on login. The browser only attaches it when:
 
 In local dev both run on `localhost`, so the Lax cookie works out of the box.
 
+## Types — OpenAPI codegen
+
+Domain types in `src/lib/types.ts` are **derived** from the backend OpenAPI
+schema (`openapi/backend.openapi.json` → generated `src/lib/api.types.ts`), so
+they never drift from the backend contract.
+
+```bash
+# After changing backend Pydantic schemas, with the backend running:
+npm run fetch-openapi          # API_BASE=... to point elsewhere
+# or just regenerate from the committed snapshot:
+npm run codegen
+```
+
+CI runs `npm run codegen:check` and fails on drift.
+
 ## Scripts
 
 - `npm run dev` — dev server (port 5173)
-- `npm run build` — `tsc -b` typecheck + production build to `dist/`
+- `npm run build` — `tsc --noEmit` typecheck + production build to `dist/`
 - `npm run preview` — serve the production build
 - `npm run typecheck` — `tsc --noEmit`
+- `npm run lint` — ESLint
+- `npm run codegen` / `codegen:check` — regenerate / verify OpenAPI types

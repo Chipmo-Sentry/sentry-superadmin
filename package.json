@@ -8,7 +8,10 @@
     "build": "tsc --noEmit && vite build",
     "preview": "vite preview",
     "typecheck": "tsc --noEmit",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "fetch-openapi": "bash scripts/fetch-openapi.sh",
+    "codegen": "openapi-typescript openapi/backend.openapi.json -o src/lib/api.types.ts",
+    "codegen:check": "bash scripts/codegen-check.sh"
   },
   "dependencies": {
     "@chipmo-sentry/ui-kit": "file:../sentry-ui-kit",
@@ -28,6 +31,7 @@
     "eslint-plugin-react-hooks": "^5.0.0",
     "eslint-plugin-react-refresh": "^0.4.14",
     "globals": "^15.0.0",
+    "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4.0.0",
     "typescript": "^5.6.3",
     "typescript-eslint": "^8.0.0",

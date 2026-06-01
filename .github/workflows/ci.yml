@@ -38,6 +38,9 @@ jobs:
       - name: Install (npm ci)
         run: npm ci --no-audit --no-fund
 
+      - name: OpenAPI types in sync
+        run: npm run codegen:check
+
       - name: Lint
         run: npm run lint
 
