@@ -1,5 +1,12 @@
 import { Avatar, AvatarFallback, Button, Logo } from "@chipmo-sentry/ui-kit";
-import { Brain, Building2, LayoutDashboard, LogOut, Users } from "lucide-react";
+import {
+  Brain,
+  Building2,
+  Inbox,
+  LayoutDashboard,
+  LogOut,
+  Users,
+} from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
 import { useAuth } from "@/context/AuthContext";
@@ -8,6 +15,7 @@ const NAV = [
   { to: "/", label: "Хяналтын самбар", icon: LayoutDashboard, end: true },
   { to: "/orgs", label: "Байгууллагууд", icon: Building2, end: false },
   { to: "/users", label: "Хэрэглэгчид", icon: Users, end: false },
+  { to: "/leads", label: "Demo хүсэлтүүд", icon: Inbox, end: false },
   { to: "/behaviors", label: "Сэжиг шалгуур", icon: Brain, end: false },
 ] as const;
 

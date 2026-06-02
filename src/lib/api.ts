@@ -10,6 +10,8 @@ import type {
   AdminStats,
   BehaviorConfig,
   BehaviorConfigPatch,
+  LeadPublic,
+  LeadUpdate,
   LoginResponse,
   OrganizationPublic,
   OrgMemberPublic,
@@ -89,6 +91,13 @@ export const admin = {
     }),
   updateUser: (userId: string, body: UserAdminUpdate) =>
     request<UserPublic>(`/api/v1/admin/users/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  listLeads: () => request<LeadPublic[]>("/api/v1/admin/leads"),
+  updateLead: (leadId: string, body: LeadUpdate) =>
+    request<LeadPublic>(`/api/v1/admin/leads/${encodeURIComponent(leadId)}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),

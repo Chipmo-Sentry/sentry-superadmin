@@ -4,6 +4,7 @@ import { Layout } from "@/components/Layout";
 import { RequireSuperAdmin } from "@/components/RequireSuperAdmin";
 import { BehaviorsPage } from "@/pages/BehaviorsPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { LeadsPage } from "@/pages/LeadsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { OrgDetailPage } from "@/pages/OrgDetailPage";
 import { OrgsPage } from "@/pages/OrgsPage";
@@ -19,6 +20,7 @@ export function App() {
           <Route path="orgs" element={<OrgsPage />} />
           <Route path="orgs/:orgId" element={<OrgDetailPage />} />
           <Route path="users" element={<UsersPage />} />
+          <Route path="leads" element={<LeadsPage />} />
           <Route path="behaviors" element={<BehaviorsPage />} />
         </Route>
       </Route>

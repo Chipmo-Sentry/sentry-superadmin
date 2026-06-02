@@ -26,3 +26,8 @@ export type UserAdminUpdate = Schemas["UserAdminUpdate"];
 export type BehaviorConfig = Schemas["BehaviorConfig"];
 export type BehaviorConfigPatch = Schemas["BehaviorConfigPatch"];
 export type BehaviorDimension = Schemas["BehaviorDimension"];
+
+// === Leads (public landing demo requests) ===
+export type LeadPublic = Schemas["LeadPublic"];
+export type LeadStatus = Schemas["LeadStatus"];
+export type LeadUpdate = Schemas["LeadUpdate"];

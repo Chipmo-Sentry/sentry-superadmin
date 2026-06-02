@@ -1937,13 +1937,54 @@
         }
       }
     },
+    "/api/v1/leads": {
+      "post": {
+        "tags": [
+          "leads"
+        ],
+        "summary": "Submit Lead",
+        "operationId": "submit_lead_api_v1_leads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/alerts": {
       "post": {
         "tags": [
           "internal"
         ],
         "summary": "Create Alert From Ai",
-        "description": "sentry-ai POSTs here after VLM verification finishes.\n\nWe derive store/camera/org from the clip \u2014 sentry-ai doesn't need to\nknow the tenancy hierarchy.",
+        "description": "sentry-ai POSTs here after VLM verification finishes.\n\nWe derive store/camera/org from the clip — sentry-ai doesn't need to\nknow the tenancy hierarchy.",
         "operationId": "create_alert_from_ai_api_v1_internal_alerts_post",
         "parameters": [
           {
@@ -2649,6 +2690,697 @@
         }
       }
     },
+    "/api/v1/admin/leads": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "List Leads",
+        "operationId": "list_leads_api_v1_admin_leads_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 200,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/LeadPublic"
+                  },
+                  "title": "Response List Leads Api V1 Admin Leads Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/leads/{lead_id}": {
+      "patch": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Update Lead",
+        "operationId": "update_lead_api_v1_admin_leads__lead_id__patch",
+        "parameters": [
+          {
+            "name": "lead_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Lead Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LeadUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/LeadPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stores/{store_id}/pairing-codes": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Create Pairing Code",
+        "operationId": "create_pairing_code_api_v1_stores__store_id__pairing_codes_post",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Store Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PairingCodePublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/stores/{store_id}/agents": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "List Store Agents",
+        "operationId": "list_store_agents_api_v1_stores__store_id__agents_get",
+        "parameters": [
+          {
+            "name": "store_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Store Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/AgentPublic"
+                  },
+                  "title": "Response List Store Agents Api V1 Stores  Store Id  Agents Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/{agent_id}": {
+      "delete": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Revoke Agent",
+        "operationId": "revoke_agent_api_v1_agents__agent_id__delete",
+        "parameters": [
+          {
+            "name": "agent_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Agent Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agents/pair": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Pair Agent",
+        "operationId": "pair_agent_api_v1_agents_pair_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentPairRequest"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentPairResult"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/cameras": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Agent List Cameras",
+        "operationId": "agent_list_cameras_api_v1_agent_cameras_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/CameraPublic"
+                  },
+                  "title": "Response Agent List Cameras Api V1 Agent Cameras Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Agent Register Camera",
+        "operationId": "agent_register_camera_api_v1_agent_cameras_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentCameraCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/cameras/{camera_id}": {
+      "delete": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Agent Delete Camera",
+        "operationId": "agent_delete_camera_api_v1_agent_cameras__camera_id__delete",
+        "parameters": [
+          {
+            "name": "camera_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Camera Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/stream-config": {
+      "get": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Agent Stream Config",
+        "description": "Tell a paired agent where (and whether) to publish its camera streams.\n\npush_enabled=True → cloud topology: the agent runs ffmpeg relays pushing\neach LAN camera to `push_rtsp_base/<mediamtx_path>`. False → MediaMTX pulls\ncameras directly (local/on-LAN) and the agent pushes nothing.",
+        "operationId": "agent_stream_config_api_v1_agent_stream_config_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AgentStreamConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/agent/heartbeat": {
+      "post": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Agent Heartbeat",
+        "operationId": "agent_heartbeat_api_v1_agent_heartbeat_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/behaviors": {
       "get": {
         "tags": [
@@ -2675,7 +3407,7 @@
           "behaviors"
         ],
         "summary": "Patch Behavior Config",
-        "description": "Update weights and/or thresholds. Auth required.",
+        "description": "Update weights and/or thresholds. Super-admin only.",
         "operationId": "patch_behavior_config_api_v1_behaviors_patch",
         "parameters": [
           {
@@ -2782,6 +3514,212 @@
         "title": "AdminStats",
         "description": "Top-level counts for the super-admin dashboard."
       },
+      "AgentCameraCreate": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Name"
+          },
+          "rtsp_url": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Rtsp Url"
+          },
+          "mediamtx_path": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Mediamtx Path"
+          },
+          "risk_threshold": {
+            "type": "number",
+            "title": "Risk Threshold",
+            "default": 70
+          }
+        },
+        "type": "object",
+        "required": [
+          "name",
+          "rtsp_url"
+        ],
+        "title": "AgentCameraCreate",
+        "description": "Camera registration payload from a paired agent (store comes from the\nagent's token, not the body)."
+      },
+      "AgentPairRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 8,
+            "minLength": 4,
+            "title": "Code"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "AgentPairRequest"
+      },
+      "AgentPairResult": {
+        "properties": {
+          "agent_token": {
+            "type": "string",
+            "title": "Agent Token"
+          },
+          "agent_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Agent Id"
+          },
+          "organization_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Organization Id"
+          },
+          "store_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Store Id"
+          },
+          "store_name": {
+            "type": "string",
+            "title": "Store Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "agent_token",
+          "agent_id",
+          "organization_id",
+          "store_id",
+          "store_name"
+        ],
+        "title": "AgentPairResult",
+        "description": "Returned to the agent on successful pairing."
+      },
+      "AgentPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "store_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Store Id"
+          },
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          },
+          "last_seen_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Seen At"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "name",
+          "store_id",
+          "is_active",
+          "last_seen_at",
+          "created_at"
+        ],
+        "title": "AgentPublic",
+        "description": "A paired agent, shown in the admin UI."
+      },
+      "AgentStreamConfig": {
+        "properties": {
+          "push_enabled": {
+            "type": "boolean",
+            "title": "Push Enabled"
+          },
+          "push_rtsp_base": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Push Rtsp Base"
+          },
+          "publish_user": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish User"
+          },
+          "publish_pass": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Publish Pass"
+          }
+        },
+        "type": "object",
+        "required": [
+          "push_enabled"
+        ],
+        "title": "AgentStreamConfig",
+        "description": "Where the agent should publish its camera streams (cloud topology).\n\npush_enabled=False means MediaMTX pulls cameras directly (local/on-LAN);\nthe agent does NOT push and runs no ffmpeg relays."
+      },
       "AlertCategory": {
         "type": "string",
         "enum": [
@@ -2804,8 +3742,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "reasoning": {
@@ -2822,7 +3760,7 @@
           },
           "inference_latency_ms": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Inference Latency Ms"
           }
         },
@@ -2836,7 +3774,7 @@
           "inference_latency_ms"
         ],
         "title": "AlertCreateInternal",
-        "description": "POST /api/v1/internal/alerts \u2014 sentry-ai service posts this."
+        "description": "POST /api/v1/internal/alerts — sentry-ai service posts this."
       },
       "AlertLevel": {
         "type": "string",
@@ -2991,9 +3929,9 @@
             "type": "object",
             "title": "Color Labels",
             "default": {
-              "green": "\u0425\u044d\u0432\u0438\u0439\u043d",
-              "yellow": "\u0410\u043d\u0445\u0430\u0430\u0440",
-              "red": "\u0421\u044d\u0436\u0438\u0433\u0442\u044d\u0439"
+              "green": "Хэвийн",
+              "yellow": "Анхаар",
+              "red": "Сэжигтэй"
             }
           }
         },
@@ -3019,7 +3957,7 @@
               }
             ],
             "title": "Weights",
-            "description": "Map of dimension key \u2192 new weight. Unknown keys rejected."
+            "description": "Map of dimension key → new weight. Unknown keys rejected."
           },
           "thresholds": {
             "anyOf": [
@@ -3034,12 +3972,12 @@
               }
             ],
             "title": "Thresholds",
-            "description": "Subset of {green_max, yellow_max}. Both \u2265 0; green_max < yellow_max."
+            "description": "Subset of {green_max, yellow_max}. Both ≥ 0; green_max < yellow_max."
           }
         },
         "type": "object",
         "title": "BehaviorConfigPatch",
-        "description": "Partial update \u2014 any subset of {weights, thresholds}."
+        "description": "Partial update — any subset of {weights, thresholds}."
       },
       "BehaviorDimension": {
         "properties": {
@@ -3125,7 +4063,7 @@
           "duration_sec": {
             "type": "number",
             "title": "Duration Sec",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -3174,8 +4112,8 @@
           },
           "stage2_threshold": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Stage2 Threshold",
             "default": 0.5
           },
@@ -3199,9 +4137,9 @@
           },
           "risk_threshold": {
             "type": "number",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Risk Threshold",
-            "default": 70.0
+            "default": 70
           }
         },
         "type": "object",
@@ -3270,7 +4208,7 @@
           "risk_threshold": {
             "type": "number",
             "title": "Risk Threshold",
-            "default": 70.0
+            "default": 70
           }
         },
         "type": "object",
@@ -3285,7 +4223,7 @@
           "created_at"
         ],
         "title": "CameraPublic",
-        "description": "Public Camera \u2014 `rtsp_url` NEVER exposed; only a boolean `has_rtsp_url`."
+        "description": "Public Camera — `rtsp_url` NEVER exposed; only a boolean `has_rtsp_url`."
       },
       "CameraUpdate": {
         "properties": {
@@ -3330,8 +4268,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1.0,
-                "minimum": 0.0
+                "maximum": 1,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -3367,7 +4305,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -3558,6 +4496,245 @@
         "type": "object",
         "title": "HTTPValidationError"
       },
+      "LeadCreate": {
+        "properties": {
+          "email": {
+            "type": "string",
+            "format": "email",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 128
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "camera_count": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100000,
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera Count"
+          },
+          "source": {
+            "type": "string",
+            "maxLength": 64,
+            "title": "Source",
+            "default": "landing"
+          },
+          "website": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Website"
+          }
+        },
+        "type": "object",
+        "required": [
+          "email"
+        ],
+        "title": "LeadCreate",
+        "description": "Public landing-page submission.\n\n`website` is a honeypot — a hidden field real users never fill. Bots that\nblindly fill every input trip it; the endpoint silently drops those."
+      },
+      "LeadPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "email": {
+            "type": "string",
+            "title": "Email"
+          },
+          "name": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "organization": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization"
+          },
+          "phone": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Phone"
+          },
+          "industry": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Industry"
+          },
+          "camera_count": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera Count"
+          },
+          "source": {
+            "type": "string",
+            "title": "Source"
+          },
+          "status": {
+            "$ref": "#/components/schemas/LeadStatus"
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "email",
+          "name",
+          "organization",
+          "phone",
+          "industry",
+          "camera_count",
+          "source",
+          "status",
+          "notes",
+          "created_at"
+        ],
+        "title": "LeadPublic"
+      },
+      "LeadStatus": {
+        "type": "string",
+        "enum": [
+          "new",
+          "contacted",
+          "qualified",
+          "closed"
+        ],
+        "title": "LeadStatus"
+      },
+      "LeadUpdate": {
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/LeadStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "notes": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 4000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Notes"
+          }
+        },
+        "type": "object",
+        "title": "LeadUpdate",
+        "description": "Super-admin triage — change status and/or attach notes."
+      },
       "LiveMetadataBatch": {
         "properties": {
           "frames": {
@@ -3693,6 +4870,32 @@
           "created_at"
         ],
         "title": "OrganizationPublic"
+      },
+      "PairingCodePublic": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "store_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Store Id"
+          },
+          "expires_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Expires At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "store_id",
+          "expires_at"
+        ],
+        "title": "PairingCodePublic",
+        "description": "Returned to the admin UI after generating a code."
       },
       "StoreCreate": {
         "properties": {

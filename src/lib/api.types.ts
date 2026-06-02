@@ -293,6 +293,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Submit Lead */
+        post: operations["submit_lead_api_v1_leads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/alerts": {
         parameters: {
             query?: never;
@@ -444,6 +461,184 @@ export interface paths {
         patch: operations["update_user_api_v1_admin_users__user_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/leads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Leads */
+        get: operations["list_leads_api_v1_admin_leads_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/leads/{lead_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Lead */
+        patch: operations["update_lead_api_v1_admin_leads__lead_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/stores/{store_id}/pairing-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Pairing Code */
+        post: operations["create_pairing_code_api_v1_stores__store_id__pairing_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/stores/{store_id}/agents": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Store Agents */
+        get: operations["list_store_agents_api_v1_stores__store_id__agents_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/{agent_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Revoke Agent */
+        delete: operations["revoke_agent_api_v1_agents__agent_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agents/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pair Agent */
+        post: operations["pair_agent_api_v1_agents_pair_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/cameras": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Agent List Cameras */
+        get: operations["agent_list_cameras_api_v1_agent_cameras_get"];
+        put?: never;
+        /** Agent Register Camera */
+        post: operations["agent_register_camera_api_v1_agent_cameras_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/cameras/{camera_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Agent Delete Camera */
+        delete: operations["agent_delete_camera_api_v1_agent_cameras__camera_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/stream-config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Agent Stream Config
+         * @description Tell a paired agent where (and whether) to publish its camera streams.
+         *
+         *     push_enabled=True → cloud topology: the agent runs ffmpeg relays pushing
+         *     each LAN camera to `push_rtsp_base/<mediamtx_path>`. False → MediaMTX pulls
+         *     cameras directly (local/on-LAN) and the agent pushes nothing.
+         */
+        get: operations["agent_stream_config_api_v1_agent_stream_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/agent/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Agent Heartbeat */
+        post: operations["agent_heartbeat_api_v1_agent_heartbeat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/behaviors": {
         parameters: {
             query?: never;
@@ -463,7 +658,7 @@ export interface paths {
         head?: never;
         /**
          * Patch Behavior Config
-         * @description Update weights and/or thresholds. Auth required.
+         * @description Update weights and/or thresholds. Super-admin only.
          */
         patch: operations["patch_behavior_config_api_v1_behaviors_patch"];
         trace?: never;
@@ -487,6 +682,100 @@ export interface components {
             cameras: number;
             /** Alerts */
             alerts: number;
+        };
+        /**
+         * AgentCameraCreate
+         * @description Camera registration payload from a paired agent (store comes from the
+         *     agent's token, not the body).
+         */
+        AgentCameraCreate: {
+            /** Name */
+            name: string;
+            /** Rtsp Url */
+            rtsp_url: string;
+            /** Mediamtx Path */
+            mediamtx_path?: string | null;
+            /**
+             * Risk Threshold
+             * @default 70
+             */
+            risk_threshold: number;
+        };
+        /** AgentPairRequest */
+        AgentPairRequest: {
+            /** Code */
+            code: string;
+            /** Name */
+            name?: string | null;
+        };
+        /**
+         * AgentPairResult
+         * @description Returned to the agent on successful pairing.
+         */
+        AgentPairResult: {
+            /** Agent Token */
+            agent_token: string;
+            /**
+             * Agent Id
+             * Format: uuid
+             */
+            agent_id: string;
+            /**
+             * Organization Id
+             * Format: uuid
+             */
+            organization_id: string;
+            /**
+             * Store Id
+             * Format: uuid
+             */
+            store_id: string;
+            /** Store Name */
+            store_name: string;
+        };
+        /**
+         * AgentPublic
+         * @description A paired agent, shown in the admin UI.
+         */
+        AgentPublic: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+            /**
+             * Store Id
+             * Format: uuid
+             */
+            store_id: string;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * AgentStreamConfig
+         * @description Where the agent should publish its camera streams (cloud topology).
+         *
+         *     push_enabled=False means MediaMTX pulls cameras directly (local/on-LAN);
+         *     the agent does NOT push and runs no ffmpeg relays.
+         */
+        AgentStreamConfig: {
+            /** Push Enabled */
+            push_enabled: boolean;
+            /** Push Rtsp Base */
+            push_rtsp_base?: string | null;
+            /** Publish User */
+            publish_user?: string | null;
+            /** Publish Pass */
+            publish_pass?: string | null;
         };
         /**
          * AlertCategory
@@ -821,6 +1110,81 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * LeadCreate
+         * @description Public landing-page submission.
+         *
+         *     `website` is a honeypot — a hidden field real users never fill. Bots that
+         *     blindly fill every input trip it; the endpoint silently drops those.
+         */
+        LeadCreate: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** Name */
+            name?: string | null;
+            /** Organization */
+            organization?: string | null;
+            /** Phone */
+            phone?: string | null;
+            /** Industry */
+            industry?: string | null;
+            /** Camera Count */
+            camera_count?: number | null;
+            /**
+             * Source
+             * @default landing
+             */
+            source: string;
+            /** Website */
+            website?: string | null;
+        };
+        /** LeadPublic */
+        LeadPublic: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            /** Name */
+            name: string | null;
+            /** Organization */
+            organization: string | null;
+            /** Phone */
+            phone: string | null;
+            /** Industry */
+            industry: string | null;
+            /** Camera Count */
+            camera_count: number | null;
+            /** Source */
+            source: string;
+            status: components["schemas"]["LeadStatus"];
+            /** Notes */
+            notes: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * LeadStatus
+         * @enum {string}
+         */
+        LeadStatus: "new" | "contacted" | "qualified" | "closed";
+        /**
+         * LeadUpdate
+         * @description Super-admin triage — change status and/or attach notes.
+         */
+        LeadUpdate: {
+            status?: components["schemas"]["LeadStatus"] | null;
+            /** Notes */
+            notes?: string | null;
+        };
+        /**
          * LiveMetadataBatch
          * @description Batch of per-frame metadata from sentry-ai live worker.
          */
@@ -881,6 +1245,24 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /**
+         * PairingCodePublic
+         * @description Returned to the admin UI after generating a code.
+         */
+        PairingCodePublic: {
+            /** Code */
+            code: string;
+            /**
+             * Store Id
+             * Format: uuid
+             */
+            store_id: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
         };
         /** StoreCreate */
         StoreCreate: {
@@ -1812,6 +2194,39 @@ export interface operations {
             };
         };
     };
+    submit_lead_api_v1_leads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_alert_from_ai_api_v1_internal_alerts_post: {
         parameters: {
             query?: never;
@@ -2154,6 +2569,374 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["UserPublic"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_leads_api_v1_admin_leads_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_lead_api_v1_admin_leads__lead_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                lead_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LeadUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["LeadPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_pairing_code_api_v1_stores__store_id__pairing_codes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                store_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PairingCodePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_store_agents_api_v1_stores__store_id__agents_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                store_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_agent_api_v1_agents__agent_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                agent_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pair_agent_api_v1_agents_pair_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentPairRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentPairResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_list_cameras_api_v1_agent_cameras_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CameraPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_register_camera_api_v1_agent_cameras_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentCameraCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CameraPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_delete_camera_api_v1_agent_cameras__camera_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                camera_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_stream_config_api_v1_agent_stream_config_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AgentStreamConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    agent_heartbeat_api_v1_agent_heartbeat_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
