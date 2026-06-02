@@ -4922,6 +4922,18 @@
             "maxLength": 64,
             "title": "Timezone",
             "default": "Asia/Ulaanbaatar"
+          },
+          "telegram_chat_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Chat Id"
           }
         },
         "type": "object",
@@ -4961,6 +4973,17 @@
             "type": "string",
             "title": "Timezone"
           },
+          "telegram_chat_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Chat Id"
+          },
           "created_at": {
             "type": "string",
             "format": "date-time",
@@ -4974,6 +4997,7 @@
           "name",
           "address",
           "timezone",
+          "telegram_chat_id",
           "created_at"
         ],
         "title": "StorePublic"
@@ -5016,6 +5040,18 @@
               }
             ],
             "title": "Timezone"
+          },
+          "telegram_chat_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Telegram Chat Id"
           }
         },
         "type": "object",

@@ -1275,6 +1275,8 @@ export interface components {
              * @default Asia/Ulaanbaatar
              */
             timezone: string;
+            /** Telegram Chat Id */
+            telegram_chat_id?: string | null;
         };
         /** StorePublic */
         StorePublic: {
@@ -1294,6 +1296,8 @@ export interface components {
             address: string | null;
             /** Timezone */
             timezone: string;
+            /** Telegram Chat Id */
+            telegram_chat_id: string | null;
             /**
              * Created At
              * Format: date-time
@@ -1308,6 +1312,8 @@ export interface components {
             address?: string | null;
             /** Timezone */
             timezone?: string | null;
+            /** Telegram Chat Id */
+            telegram_chat_id?: string | null;
         };
         /** TokenPair */
         TokenPair: {
