@@ -21,3 +21,8 @@ export type OrgMemberPublic = Schemas["OrgMemberPublic"];
 export type AdminStats = Schemas["AdminStats"];
 export type UserInviteInput = Schemas["UserInvite"];
 export type UserAdminUpdate = Schemas["UserAdminUpdate"];
+
+// === Behaviors (global 6-dim weights + risk thresholds) ===
+export type BehaviorConfig = Schemas["BehaviorConfig"];
+export type BehaviorConfigPatch = Schemas["BehaviorConfigPatch"];
+export type BehaviorDimension = Schemas["BehaviorDimension"];

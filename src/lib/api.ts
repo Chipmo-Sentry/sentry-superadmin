@@ -8,6 +8,8 @@
 
 import type {
   AdminStats,
+  BehaviorConfig,
+  BehaviorConfigPatch,
   LoginResponse,
   OrganizationPublic,
   OrgMemberPublic,
@@ -87,6 +89,15 @@ export const admin = {
     }),
   updateUser: (userId: string, body: UserAdminUpdate) =>
     request<UserPublic>(`/api/v1/admin/users/${encodeURIComponent(userId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+};
+
+export const behaviors = {
+  get: () => request<BehaviorConfig>("/api/v1/behaviors"),
+  patch: (body: BehaviorConfigPatch) =>
+    request<BehaviorConfig>("/api/v1/behaviors", {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
