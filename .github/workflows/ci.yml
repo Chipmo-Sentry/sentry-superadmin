@@ -26,7 +26,7 @@ jobs:
           node-version: "22"
           cache: "npm"
 
-      - name: Build ui-kit (file: dependency)
+      - name: "Build ui-kit (file: dependency)"
         # ui-kit is a public sibling repo consumed via file:../sentry-ui-kit.
         # Clone + build it so the named exports + dist/styles.css resolve for
         # typecheck and the Vite build (a stub would miss the real exports).
