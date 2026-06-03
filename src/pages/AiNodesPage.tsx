@@ -59,6 +59,56 @@ function telemetrySummary(raw: string | null): string {
   }
 }
 
+/** Per-dependency health the node probes locally (ollama/ingest/ai/tunnel). */
+function parseHealth(raw: string | null): Record<string, boolean> | null {
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as { health?: unknown };
+    return t.health && typeof t.health === "object"
+      ? (t.health as Record<string, boolean>)
+      : null;
+  } catch {
+    return null;
+  }
+}
+
+const HEALTH_ORDER = ["ai", "ollama", "ingest", "tunnel"];
+const HEALTH_LABELS: Record<string, string> = {
+  ai: "AI",
+  ollama: "Ollama",
+  ingest: "Ingest",
+  tunnel: "Tunnel",
+};
+
+function HealthDots({ health }: { health: Record<string, boolean> | null }) {
+  if (!health) return null;
+  const keys = HEALTH_ORDER.filter((k) => k in health).concat(
+    Object.keys(health).filter((k) => !HEALTH_ORDER.includes(k)),
+  );
+  if (keys.length === 0) return null;
+  return (
+    <div className="mt-1 flex flex-wrap gap-1.5">
+      {keys.map((k) => (
+        <span
+          key={k}
+          className="inline-flex items-center gap-1 text-xs"
+          title={health[k] ? "OK" : "DOWN"}
+        >
+          <span
+            className="inline-block h-2 w-2 rounded-full"
+            style={{
+              backgroundColor: health[k]
+                ? "var(--color-success)"
+                : "var(--color-danger)",
+            }}
+          />
+          {HEALTH_LABELS[k] ?? k}
+        </span>
+      ))}
+    </div>
+  );
+}
+
 export function AiNodesPage() {
   const [nodes, setNodes] = useState<AiNodePublic[] | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -165,8 +215,11 @@ export function AiNodesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{n.version || "—"}</TableCell>
-                    <TableCell className="text-sm text-[var(--color-muted-foreground)]">
-                      {telemetrySummary(n.telemetry)}
+                    <TableCell className="text-sm">
+                      <span className="text-[var(--color-muted-foreground)]">
+                        {telemetrySummary(n.telemetry)}
+                      </span>
+                      <HealthDots health={parseHealth(n.telemetry)} />
                     </TableCell>
                     <TableCell className="text-sm">
                       {n.provider} · skip {n.frame_skip}
