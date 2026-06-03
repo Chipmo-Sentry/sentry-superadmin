@@ -21,7 +21,7 @@ import {
   TableHeader,
   TableRow,
 } from "@chipmo-sentry/ui-kit";
-import { Cpu, MoreHorizontal, Plus } from "lucide-react";
+import { Cpu, Download, MoreHorizontal, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Field } from "@/components/Field";
@@ -30,6 +30,11 @@ import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
 const PROVIDERS = ["minicpm-v-2.6", "qwen2.5-vl-7b"];
 const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+
+/** Latest published AI server installer (GitHub Releases). `latest/download`
+ * always resolves to the newest release asset, so this never needs bumping. */
+const AI_SETUP_DOWNLOAD_URL =
+  "https://github.com/Chipmo-Sentry/sentry-ai/releases/latest/download/ChipmoSentryAi-Setup.exe";
 
 const selectClass =
   "h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm disabled:opacity-50";
@@ -93,10 +98,23 @@ export function AiNodesPage() {
     <div className="space-y-6 p-8">
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">AI сервер (compute node)</h1>
-        <Button size="sm" onClick={() => void generateCode()}>
-          <Plus className="h-4 w-4" />
-          Холболтын код үүсгэх
-        </Button>
+        <div className="flex items-center gap-3">
+          <Button
+            asChild
+            size="sm"
+            variant="outline"
+            title="Windows .exe — AI серверийн хамгийн сүүлийн хувилбар"
+          >
+            <a href={AI_SETUP_DOWNLOAD_URL} target="_blank" rel="noopener noreferrer">
+              <Download className="h-4 w-4" />
+              Setup татах
+            </a>
+          </Button>
+          <Button size="sm" onClick={() => void generateCode()}>
+            <Plus className="h-4 w-4" />
+            Холболтын код үүсгэх
+          </Button>
+        </div>
       </div>
 
       {error && <p className="text-[var(--color-danger)]">{error}</p>}
