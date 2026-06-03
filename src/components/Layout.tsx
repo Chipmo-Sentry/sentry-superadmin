@@ -2,6 +2,7 @@ import { Avatar, AvatarFallback, Button, Logo } from "@chipmo-sentry/ui-kit";
 import {
   Brain,
   Building2,
+  Cpu,
   Inbox,
   LayoutDashboard,
   LogOut,
@@ -16,6 +17,7 @@ const NAV = [
   { to: "/orgs", label: "Байгууллагууд", icon: Building2, end: false },
   { to: "/users", label: "Хэрэглэгчид", icon: Users, end: false },
   { to: "/leads", label: "Demo хүсэлтүүд", icon: Inbox, end: false },
+  { to: "/ai-nodes", label: "AI сервер", icon: Cpu, end: false },
   { to: "/behaviors", label: "Сэжиг шалгуур", icon: Brain, end: false },
 ] as const;
 

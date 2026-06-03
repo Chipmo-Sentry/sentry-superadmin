@@ -495,6 +495,74 @@ export interface paths {
         patch: operations["update_lead_api_v1_admin_leads__lead_id__patch"];
         trace?: never;
     };
+    "/api/v1/admin/ai-nodes/pairing-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Ai Node Pairing Code */
+        post: operations["create_ai_node_pairing_code_api_v1_admin_ai_nodes_pairing_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-nodes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Ai Nodes */
+        get: operations["list_ai_nodes_api_v1_admin_ai_nodes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-nodes/{node_id}/revoke": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Revoke Ai Node */
+        post: operations["revoke_ai_node_api_v1_admin_ai_nodes__node_id__revoke_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-nodes/{node_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Ai Node */
+        patch: operations["update_ai_node_api_v1_admin_ai_nodes__node_id__patch"];
+        trace?: never;
+    };
     "/api/v1/stores/{store_id}/pairing-codes": {
         parameters: {
             query?: never;
@@ -639,6 +707,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/ai-nodes/pair": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Pair Ai Node */
+        post: operations["pair_ai_node_api_v1_ai_nodes_pair_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai-nodes/heartbeat": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Ai Node Heartbeat
+         * @description Report telemetry + receive the latest config in one round-trip.
+         */
+        post: operations["ai_node_heartbeat_api_v1_ai_nodes_heartbeat_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/ai-nodes/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Ai Node Config */
+        get: operations["ai_node_config_api_v1_ai_nodes_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/behaviors": {
         parameters: {
             query?: never;
@@ -776,6 +898,120 @@ export interface components {
             publish_user?: string | null;
             /** Publish Pass */
             publish_pass?: string | null;
+        };
+        /**
+         * AiNodeConfig
+         * @description Config the node polls + applies.
+         */
+        AiNodeConfig: {
+            /** Enabled */
+            enabled: boolean;
+            /** Provider */
+            provider: string;
+            /** Frame Skip */
+            frame_skip: number;
+        };
+        /**
+         * AiNodeHeartbeat
+         * @description Telemetry the node reports every ~60s.
+         */
+        AiNodeHeartbeat: {
+            /** Fps Inference */
+            fps_inference?: number | null;
+            /** Vram Mb */
+            vram_mb?: number | null;
+            /** Active Cameras */
+            active_cameras?: number | null;
+            /** Version */
+            version?: string | null;
+        };
+        /**
+         * AiNodePairRequest
+         * @description Posted by the installed sentry-ai server with the 6-digit code.
+         */
+        AiNodePairRequest: {
+            /** Code */
+            code: string;
+            /** Name */
+            name?: string | null;
+            /** Hostname */
+            hostname?: string | null;
+            /** Public Url */
+            public_url?: string | null;
+            /** Version */
+            version?: string | null;
+            /** Gpu */
+            gpu?: string | null;
+        };
+        /** AiNodePairResult */
+        AiNodePairResult: {
+            /** Ai Node Token */
+            ai_node_token: string;
+            /**
+             * Ai Node Id
+             * Format: uuid
+             */
+            ai_node_id: string;
+            config: components["schemas"]["AiNodeConfig"];
+        };
+        /** AiNodePairingCodePublic */
+        AiNodePairingCodePublic: {
+            /** Code */
+            code: string;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /** AiNodePublic */
+        AiNodePublic: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Name */
+            name: string | null;
+            /** Hostname */
+            hostname: string | null;
+            /** Public Url */
+            public_url: string | null;
+            /** Version */
+            version: string | null;
+            /** Gpu */
+            gpu: string | null;
+            /** Is Active */
+            is_active: boolean;
+            /** Last Seen At */
+            last_seen_at: string | null;
+            /** Telemetry */
+            telemetry: string | null;
+            /** Enabled */
+            enabled: boolean;
+            /** Provider */
+            provider: string;
+            /** Frame Skip */
+            frame_skip: number;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /**
+         * AiNodeUpdate
+         * @description Super-admin config edit.
+         */
+        AiNodeUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Enabled */
+            enabled?: boolean | null;
+            /** Provider */
+            provider?: string | null;
+            /** Frame Skip */
+            frame_skip?: number | null;
         };
         /**
          * AlertCategory
@@ -2729,6 +2965,144 @@ export interface operations {
             };
         };
     };
+    create_ai_node_pairing_code_api_v1_admin_ai_nodes_pairing_codes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiNodePairingCodePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_ai_nodes_api_v1_admin_ai_nodes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiNodePublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_ai_node_api_v1_admin_ai_nodes__node_id__revoke_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                node_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_ai_node_api_v1_admin_ai_nodes__node_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                node_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiNodeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiNodePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_pairing_code_api_v1_stores__store_id__pairing_codes_post: {
         parameters: {
             query?: never;
@@ -3010,6 +3384,105 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    pair_ai_node_api_v1_ai_nodes_pair_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiNodePairRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiNodePairResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_node_heartbeat_api_v1_ai_nodes_heartbeat_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AiNodeHeartbeat"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiNodeConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_node_config_api_v1_ai_nodes_config_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AiNodeConfig"];
+                };
             };
             /** @description Validation Error */
             422: {

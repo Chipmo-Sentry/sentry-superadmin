@@ -3,6 +3,7 @@ import { Navigate, Route, Routes } from "react-router-dom";
 import { Layout } from "@/components/Layout";
 import { RequireSuperAdmin } from "@/components/RequireSuperAdmin";
 import { BehaviorsPage } from "@/pages/BehaviorsPage";
+import { AiNodesPage } from "@/pages/AiNodesPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LeadsPage } from "@/pages/LeadsPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -21,6 +22,7 @@ export function App() {
           <Route path="orgs/:orgId" element={<OrgDetailPage />} />
           <Route path="users" element={<UsersPage />} />
           <Route path="leads" element={<LeadsPage />} />
+          <Route path="ai-nodes" element={<AiNodesPage />} />
           <Route path="behaviors" element={<BehaviorsPage />} />
         </Route>
       </Route>

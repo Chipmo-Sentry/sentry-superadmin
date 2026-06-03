@@ -8,6 +8,9 @@
 
 import type {
   AdminStats,
+  AiNodePairingCode,
+  AiNodePublic,
+  AiNodeUpdate,
   BehaviorConfig,
   BehaviorConfigPatch,
   LeadPublic,
@@ -98,6 +101,21 @@ export const admin = {
   listLeads: () => request<LeadPublic[]>("/api/v1/admin/leads"),
   updateLead: (leadId: string, body: LeadUpdate) =>
     request<LeadPublic>(`/api/v1/admin/leads/${encodeURIComponent(leadId)}`, {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+
+  listAiNodes: () => request<AiNodePublic[]>("/api/v1/admin/ai-nodes"),
+  createAiNodePairingCode: () =>
+    request<AiNodePairingCode>("/api/v1/admin/ai-nodes/pairing-codes", {
+      method: "POST",
+    }),
+  revokeAiNode: (nodeId: string) =>
+    request<void>(`/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}/revoke`, {
+      method: "POST",
+    }),
+  updateAiNode: (nodeId: string, body: AiNodeUpdate) =>
+    request<AiNodePublic>(`/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}`, {
       method: "PATCH",
       body: JSON.stringify(body),
     }),

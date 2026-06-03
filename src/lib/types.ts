@@ -31,3 +31,8 @@ export type BehaviorDimension = Schemas["BehaviorDimension"];
 export type LeadPublic = Schemas["LeadPublic"];
 export type LeadStatus = Schemas["LeadStatus"];
 export type LeadUpdate = Schemas["LeadUpdate"];
+
+// === AI nodes (sentry-ai compute boxes) ===
+export type AiNodePublic = Schemas["AiNodePublic"];
+export type AiNodeUpdate = Schemas["AiNodeUpdate"];
+export type AiNodePairingCode = Schemas["AiNodePairingCodePublic"];
