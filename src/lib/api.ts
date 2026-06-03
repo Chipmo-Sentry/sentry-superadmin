@@ -13,6 +13,8 @@ import type {
   AiNodeUpdate,
   BehaviorConfig,
   BehaviorConfigPatch,
+  DimensionCreate,
+  DimensionUpdate,
   LeadPublic,
   LeadUpdate,
   LoginResponse,
@@ -128,4 +130,19 @@ export const behaviors = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+  addDimension: (body: DimensionCreate) =>
+    request<BehaviorConfig>("/api/v1/behaviors/dimensions", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updateDimension: (key: string, body: DimensionUpdate) =>
+    request<BehaviorConfig>(
+      `/api/v1/behaviors/dimensions/${encodeURIComponent(key)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    ),
+  deleteDimension: (key: string) =>
+    request<BehaviorConfig>(
+      `/api/v1/behaviors/dimensions/${encodeURIComponent(key)}`,
+      { method: "DELETE" },
+    ),
 };

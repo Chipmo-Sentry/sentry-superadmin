@@ -768,10 +768,7 @@ export interface paths {
             path?: never;
             cookie?: never;
         };
-        /**
-         * Get Behavior Config
-         * @description Current global behavior config. Public (any authenticated context can poll).
-         */
+        /** Get Behavior Config */
         get: operations["get_behavior_config_api_v1_behaviors_get"];
         put?: never;
         post?: never;
@@ -780,9 +777,44 @@ export interface paths {
         head?: never;
         /**
          * Patch Behavior Config
-         * @description Update weights and/or thresholds. Super-admin only.
+         * @description Bulk weights (existing keys) + thresholds. Super-admin only.
          */
         patch: operations["patch_behavior_config_api_v1_behaviors_patch"];
+        trace?: never;
+    };
+    "/api/v1/behaviors/dimensions": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Add Dimension */
+        post: operations["add_dimension_api_v1_behaviors_dimensions_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/behaviors/dimensions/{key}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Delete Dimension */
+        delete: operations["delete_dimension_api_v1_behaviors_dimensions__key__delete"];
+        options?: never;
+        head?: never;
+        /** Update Dimension */
+        patch: operations["update_dimension_api_v1_behaviors_dimensions__key__patch"];
         trace?: never;
     };
 }
@@ -1113,20 +1145,14 @@ export interface components {
         };
         /**
          * BehaviorConfigPatch
-         * @description Partial update — any subset of {weights, thresholds}.
+         * @description Back-compat bulk update — weights (existing keys only) and/or thresholds.
          */
         BehaviorConfigPatch: {
-            /**
-             * Weights
-             * @description Map of dimension key → new weight. Unknown keys rejected.
-             */
+            /** Weights */
             weights?: {
                 [key: string]: number;
             } | null;
-            /**
-             * Thresholds
-             * @description Subset of {green_max, yellow_max}. Both ≥ 0; green_max < yellow_max.
-             */
+            /** Thresholds */
             thresholds?: {
                 [key: string]: number;
             } | null;
@@ -1141,10 +1167,12 @@ export interface components {
             description_mn: string;
             /** Weight */
             weight: number;
+            /** Active */
+            active: boolean;
             /** Active In M1 */
             active_in_m1: boolean;
-            /** Why Deferred */
-            why_deferred: string | null;
+            /** Builtin */
+            builtin: boolean;
         };
         /** Body_upload_clip_api_v1_clips_post */
         Body_upload_clip_api_v1_clips_post: {
@@ -1297,6 +1325,34 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+        };
+        /** DimensionCreate */
+        DimensionCreate: {
+            /** Key */
+            key: string;
+            /** Label Mn */
+            label_mn: string;
+            /**
+             * Description Mn
+             * @default
+             */
+            description_mn: string;
+            /**
+             * Weight
+             * @default 1
+             */
+            weight: number;
+        };
+        /** DimensionUpdate */
+        DimensionUpdate: {
+            /** Label Mn */
+            label_mn?: string | null;
+            /** Description Mn */
+            description_mn?: string | null;
+            /** Weight */
+            weight?: number | null;
+            /** Active */
+            active?: boolean | null;
         };
         /** FeedbackCreate */
         FeedbackCreate: {
@@ -3529,6 +3585,117 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["BehaviorConfigPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    add_dimension_api_v1_behaviors_dimensions_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DimensionCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_dimension_api_v1_behaviors_dimensions__key__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                key: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BehaviorConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_dimension_api_v1_behaviors_dimensions__key__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                key: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DimensionUpdate"];
             };
         };
         responses: {

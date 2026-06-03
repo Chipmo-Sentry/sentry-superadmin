@@ -6,11 +6,18 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Input,
+  Modal,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
+  ModalTitle,
   Spinner,
 } from "@chipmo-sentry/ui-kit";
-import { Brain, CheckCircle2, Clock, Save } from "lucide-react";
+import { Brain, CheckCircle2, Clock, Plus, Save, Trash2 } from "lucide-react";
 import { useEffect, useState } from "react";
 
+import { Field } from "@/components/Field";
 import { behaviors } from "@/lib/api";
 import type { BehaviorConfig } from "@/lib/types";
 
@@ -31,6 +38,8 @@ export function BehaviorsPage() {
   const [yellowMax, setYellowMax] = useState<number>(15);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
+  const [busyKey, setBusyKey] = useState<string | null>(null);
 
   function hydrate(j: BehaviorConfig) {
     setData(j);
@@ -80,6 +89,30 @@ export function BehaviorsPage() {
     }
   }
 
+  async function toggleActive(key: string, active: boolean) {
+    setBusyKey(key);
+    setErr(null);
+    try {
+      hydrate(await behaviors.updateDimension(key, { active }));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Шинэчилж чадсангүй");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
+  async function removeDim(key: string) {
+    setBusyKey(key);
+    setErr(null);
+    try {
+      hydrate(await behaviors.deleteDimension(key));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Устгаж чадсангүй");
+    } finally {
+      setBusyKey(null);
+    }
+  }
+
   if (err && !data)
     return <p className="p-8 text-[var(--color-danger)]">{err}</p>;
   if (!data) {
@@ -111,6 +144,10 @@ export function BehaviorsPage() {
               Хадгалагдсан · {savedAt}
             </span>
           )}
+          <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
+            <Plus className="h-4 w-4" />
+            Шалгуур нэмэх
+          </Button>
           <Button
             size="sm"
             onClick={save}
@@ -170,10 +207,15 @@ export function BehaviorsPage() {
         </CardContent>
       </Card>
 
-      {/* Dimension weights */}
+      {/* Criteria catalog */}
       <Card>
         <CardHeader>
-          <CardTitle className="text-base">6 шалгуур — жин (оноо)</CardTitle>
+          <CardTitle className="text-base">Шалгуурууд</CardTitle>
+          <CardDescription>
+            Детектортой шалгуур л оноо нэмнэ. Захиалгат шалгуур (детектор
+            хүлээгдэж) нь sentry-ai-д код гартал идэвхгүй. Унтраасан шалгуур
+            оноо нэмэхгүй.
+          </CardDescription>
         </CardHeader>
         <CardContent className="px-0 pt-0">
           <table className="w-full text-sm">
@@ -181,8 +223,10 @@ export function BehaviorsPage() {
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Шалгуур</th>
                 <th className="px-3 py-2 text-left font-medium">Тайлбар</th>
-                <th className="px-3 py-2 text-center font-medium">Төлөв</th>
+                <th className="px-3 py-2 text-center font-medium">Детектор</th>
+                <th className="px-3 py-2 text-center font-medium">Идэвх</th>
                 <th className="px-3 py-2 text-right font-medium">Жин</th>
+                <th className="px-3 py-2"></th>
               </tr>
             </thead>
             <tbody>
@@ -190,7 +234,7 @@ export function BehaviorsPage() {
                 <tr
                   key={d.key}
                   className={`border-b border-[var(--color-border)] ${
-                    !d.active_in_m1 ? "opacity-60" : ""
+                    !d.active ? "opacity-60" : ""
                   }`}
                 >
                   <td className="px-3 py-3 align-top">
@@ -203,15 +247,25 @@ export function BehaviorsPage() {
                     {d.description_mn}
                   </td>
                   <td className="px-3 py-3 align-top text-center">
-                    {d.active_in_m1 ? (
+                    {d.builtin ? (
                       <Badge tone="success">
-                        <CheckCircle2 className="h-3 w-3" /> Идэвхтэй
+                        <CheckCircle2 className="h-3 w-3" /> Детектортой
                       </Badge>
                     ) : (
                       <Badge tone="warning">
                         <Clock className="h-3 w-3" /> Хүлээгдэж
                       </Badge>
                     )}
+                  </td>
+                  <td className="px-3 py-3 align-top text-center">
+                    <input
+                      type="checkbox"
+                      checked={d.active}
+                      disabled={busyKey === d.key}
+                      onChange={(e) => void toggleActive(d.key, e.target.checked)}
+                      className="h-4 w-4"
+                      aria-label="Идэвхжүүлэх"
+                    />
                   </td>
                   <td className="px-3 py-3 align-top text-right">
                     <input
@@ -228,6 +282,19 @@ export function BehaviorsPage() {
                       className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
                     />
                   </td>
+                  <td className="px-3 py-3 align-top text-center">
+                    {!d.builtin && (
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        aria-label="Устгах"
+                        disabled={busyKey === d.key}
+                        onClick={() => void removeDim(d.key)}
+                      >
+                        <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                      </Button>
+                    )}
+                  </td>
                 </tr>
               ))}
             </tbody>
@@ -238,7 +305,129 @@ export function BehaviorsPage() {
       <p className="mt-6 text-xs text-[var(--color-muted-foreground)]">
         Хадгалсны дараа sentry-ai ~30 секунд дотор шинэ утгуудыг хүлээн авна.
       </p>
+
+      <AddCriterionModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        onSaved={(fresh) => {
+          hydrate(fresh);
+          setAddOpen(false);
+        }}
+        onError={(m) => setErr(m)}
+      />
     </div>
+  );
+}
+
+function AddCriterionModal({
+  open,
+  onClose,
+  onSaved,
+  onError,
+}: {
+  open: boolean;
+  onClose: () => void;
+  onSaved: (fresh: BehaviorConfig) => void;
+  onError: (msg: string) => void;
+}) {
+  const [key, setKey] = useState("");
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [weight, setWeight] = useState(1);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    if (!open) return;
+    setKey("");
+    setLabel("");
+    setDescription("");
+    setWeight(1);
+  }, [open]);
+
+  const keyValid = /^[a-z][a-z0-9_]{1,39}$/.test(key);
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (!keyValid || !label.trim()) return;
+    setSaving(true);
+    try {
+      const fresh = await behaviors.addDimension({
+        key,
+        label_mn: label.trim(),
+        description_mn: description.trim(),
+        weight,
+      });
+      onSaved(fresh);
+    } catch (err) {
+      onError(err instanceof Error ? err.message : "Нэмж чадсангүй");
+    } finally {
+      setSaving(false);
+    }
+  }
+
+  return (
+    <Modal open={open} onOpenChange={(o) => !o && onClose()}>
+      <ModalContent>
+        <ModalHeader>
+          <ModalTitle>Шинэ сэжиг шалгуур</ModalTitle>
+        </ModalHeader>
+        <form className="space-y-4" onSubmit={onSubmit}>
+          <p className="rounded-md bg-[var(--color-muted)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+            Анхаар: AI энэ шалгуурыг бодитоор илрүүлэхийн тулд sentry-ai-д
+            тухайн түлхүүрийн <strong>детектор код</strong> нэмэгдсэн байх ёстой.
+            Тэр болтол шалгуур бүртгэгдэх ч оноо нэмэхгүй.
+          </p>
+          <Field label="Түлхүүр (key)" required hint="латин жижиг үсэг/тоо/_; үсгээр эхэлнэ">
+            <Input
+              value={key}
+              onChange={(e) => setKey(e.target.value)}
+              placeholder="ж: loitering"
+              disabled={saving}
+              autoComplete="off"
+            />
+          </Field>
+          {key && !keyValid && (
+            <p className="text-xs text-[var(--color-danger)]">
+              Зөвхөн a–z, 0–9, _; үсгээр эхэлж 2–40 тэмдэгт.
+            </p>
+          )}
+          <Field label="Нэр" required>
+            <Input
+              value={label}
+              onChange={(e) => setLabel(e.target.value)}
+              placeholder="ж: Удаан зогсох"
+              disabled={saving}
+            />
+          </Field>
+          <Field label="Тайлбар">
+            <Input
+              value={description}
+              onChange={(e) => setDescription(e.target.value)}
+              placeholder="Юу илрүүлэхийг тайлбарла"
+              disabled={saving}
+            />
+          </Field>
+          <Field label="Жин">
+            <Input
+              type="number"
+              step="0.5"
+              min="0"
+              value={weight}
+              onChange={(e) => setWeight(Number(e.target.value) || 0)}
+              disabled={saving}
+            />
+          </Field>
+          <ModalFooter>
+            <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+              Болих
+            </Button>
+            <Button type="submit" disabled={saving || !keyValid || !label.trim()}>
+              {saving ? "Нэмж байна…" : "Нэмэх"}
+            </Button>
+          </ModalFooter>
+        </form>
+      </ModalContent>
+    </Modal>
   );
 }
 

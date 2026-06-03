@@ -3824,7 +3824,6 @@
           "behaviors"
         ],
         "summary": "Get Behavior Config",
-        "description": "Current global behavior config. Public (any authenticated context can poll).",
         "operationId": "get_behavior_config_api_v1_behaviors_get",
         "responses": {
           "200": {
@@ -3844,7 +3843,7 @@
           "behaviors"
         ],
         "summary": "Patch Behavior Config",
-        "description": "Update weights and/or thresholds. Super-admin only.",
+        "description": "Bulk weights (existing keys) + thresholds. Super-admin only.",
         "operationId": "patch_behavior_config_api_v1_behaviors_patch",
         "parameters": [
           {
@@ -3890,6 +3889,237 @@
             }
           }
         },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BehaviorConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/behaviors/dimensions": {
+      "post": {
+        "tags": [
+          "behaviors"
+        ],
+        "summary": "Add Dimension",
+        "operationId": "add_dimension_api_v1_behaviors_dimensions_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DimensionCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BehaviorConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/behaviors/dimensions/{key}": {
+      "patch": {
+        "tags": [
+          "behaviors"
+        ],
+        "summary": "Update Dimension",
+        "operationId": "update_dimension_api_v1_behaviors_dimensions__key__patch",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/DimensionUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BehaviorConfig"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "behaviors"
+        ],
+        "summary": "Delete Dimension",
+        "operationId": "delete_dimension_api_v1_behaviors_dimensions__key__delete",
+        "parameters": [
+          {
+            "name": "key",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Key"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
         "responses": {
           "200": {
             "description": "Successful Response",
@@ -4767,8 +4997,7 @@
                 "type": "null"
               }
             ],
-            "title": "Weights",
-            "description": "Map of dimension key → new weight. Unknown keys rejected."
+            "title": "Weights"
           },
           "thresholds": {
             "anyOf": [
@@ -4782,13 +5011,12 @@
                 "type": "null"
               }
             ],
-            "title": "Thresholds",
-            "description": "Subset of {green_max, yellow_max}. Both ≥ 0; green_max < yellow_max."
+            "title": "Thresholds"
           }
         },
         "type": "object",
         "title": "BehaviorConfigPatch",
-        "description": "Partial update — any subset of {weights, thresholds}."
+        "description": "Back-compat bulk update — weights (existing keys only) and/or thresholds."
       },
       "BehaviorDimension": {
         "properties": {
@@ -4808,20 +5036,17 @@
             "type": "number",
             "title": "Weight"
           },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
           "active_in_m1": {
             "type": "boolean",
             "title": "Active In M1"
           },
-          "why_deferred": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Why Deferred"
+          "builtin": {
+            "type": "boolean",
+            "title": "Builtin"
           }
         },
         "type": "object",
@@ -4830,8 +5055,9 @@
           "label_mn",
           "description_mn",
           "weight",
+          "active",
           "active_in_m1",
-          "why_deferred"
+          "builtin"
         ],
         "title": "BehaviorDimension"
       },
@@ -5206,6 +5432,94 @@
           "created_at"
         ],
         "title": "ClipPublic"
+      },
+      "DimensionCreate": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "maxLength": 40,
+            "minLength": 2,
+            "title": "Key"
+          },
+          "label_mn": {
+            "type": "string",
+            "maxLength": 120,
+            "minLength": 1,
+            "title": "Label Mn"
+          },
+          "description_mn": {
+            "type": "string",
+            "maxLength": 1000,
+            "title": "Description Mn",
+            "default": ""
+          },
+          "weight": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Weight",
+            "default": 1
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "label_mn"
+        ],
+        "title": "DimensionCreate"
+      },
+      "DimensionUpdate": {
+        "properties": {
+          "label_mn": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 120,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Label Mn"
+          },
+          "description_mn": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 1000
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Description Mn"
+          },
+          "weight": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Weight"
+          },
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          }
+        },
+        "type": "object",
+        "title": "DimensionUpdate"
       },
       "FeedbackCreate": {
         "properties": {

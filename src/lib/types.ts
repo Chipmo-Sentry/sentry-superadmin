@@ -22,10 +22,12 @@ export type AdminStats = Schemas["AdminStats"];
 export type UserInviteInput = Schemas["UserInvite"];
 export type UserAdminUpdate = Schemas["UserAdminUpdate"];
 
-// === Behaviors (global 6-dim weights + risk thresholds) ===
+// === Behaviors (editable criteria catalog + risk thresholds) ===
 export type BehaviorConfig = Schemas["BehaviorConfig"];
 export type BehaviorConfigPatch = Schemas["BehaviorConfigPatch"];
 export type BehaviorDimension = Schemas["BehaviorDimension"];
+export type DimensionCreate = Schemas["DimensionCreate"];
+export type DimensionUpdate = Schemas["DimensionUpdate"];
 
 // === Leads (public landing demo requests) ===
 export type LeadPublic = Schemas["LeadPublic"];
