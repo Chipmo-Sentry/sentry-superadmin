@@ -1185,14 +1185,81 @@ export interface components {
             notes?: string | null;
         };
         /**
+         * LiveFrame
+         * @description Per-analyzed-frame metadata from the sentry-ai live worker
+         *     (REV.1 — mirrors sentry-ai's FrameMetadata).
+         */
+        LiveFrame: {
+            /** Camera Id */
+            camera_id: string;
+            /**
+             * Frame Id
+             * @default 0
+             */
+            frame_id: number;
+            /**
+             * Ts Ms
+             * @default 0
+             */
+            ts_ms: number;
+            /**
+             * Width
+             * @default 0
+             */
+            width: number;
+            /**
+             * Height
+             * @default 0
+             */
+            height: number;
+            /**
+             * Fps Inference
+             * @default 0
+             */
+            fps_inference: number;
+            /** Tracks */
+            tracks?: components["schemas"]["LiveTrack"][];
+        };
+        /**
          * LiveMetadataBatch
          * @description Batch of per-frame metadata from sentry-ai live worker.
          */
         LiveMetadataBatch: {
             /** Frames */
-            frames: {
-                [key: string]: unknown;
-            }[];
+            frames: components["schemas"]["LiveFrame"][];
+        };
+        /**
+         * LiveTrack
+         * @description One detected person in one frame (REV.1 — mirrors sentry-ai's
+         *     TrackPayload). Lenient: unknown keys ignored, display fields defaulted so a
+         *     schema addition on the AI side never 422s the whole batch.
+         */
+        LiveTrack: {
+            /** Person Id */
+            person_id: number;
+            /** Box */
+            box: [
+                number,
+                number,
+                number,
+                number
+            ];
+            /**
+             * Det Confidence
+             * @default 0
+             */
+            det_confidence: number;
+            /**
+             * Risk Pct
+             * @default 0
+             */
+            risk_pct: number;
+            /**
+             * Color
+             * @default green
+             * @enum {string}
+             */
+            color: "green" | "yellow" | "red";
         };
         /** LoginRequest */
         LoginRequest: {

@@ -4735,12 +4735,59 @@
         "title": "LeadUpdate",
         "description": "Super-admin triage — change status and/or attach notes."
       },
+      "LiveFrame": {
+        "properties": {
+          "camera_id": {
+            "type": "string",
+            "maxLength": 128,
+            "minLength": 1,
+            "title": "Camera Id"
+          },
+          "frame_id": {
+            "type": "integer",
+            "title": "Frame Id",
+            "default": 0
+          },
+          "ts_ms": {
+            "type": "integer",
+            "title": "Ts Ms",
+            "default": 0
+          },
+          "width": {
+            "type": "integer",
+            "title": "Width",
+            "default": 0
+          },
+          "height": {
+            "type": "integer",
+            "title": "Height",
+            "default": 0
+          },
+          "fps_inference": {
+            "type": "number",
+            "title": "Fps Inference",
+            "default": 0
+          },
+          "tracks": {
+            "items": {
+              "$ref": "#/components/schemas/LiveTrack"
+            },
+            "type": "array",
+            "title": "Tracks"
+          }
+        },
+        "type": "object",
+        "required": [
+          "camera_id"
+        ],
+        "title": "LiveFrame",
+        "description": "Per-analyzed-frame metadata from the sentry-ai live worker\n(REV.1 — mirrors sentry-ai's FrameMetadata)."
+      },
       "LiveMetadataBatch": {
         "properties": {
           "frames": {
             "items": {
-              "additionalProperties": true,
-              "type": "object"
+              "$ref": "#/components/schemas/LiveFrame"
             },
             "type": "array",
             "maxItems": 200,
@@ -4754,6 +4801,62 @@
         ],
         "title": "LiveMetadataBatch",
         "description": "Batch of per-frame metadata from sentry-ai live worker."
+      },
+      "LiveTrack": {
+        "properties": {
+          "person_id": {
+            "type": "integer",
+            "title": "Person Id"
+          },
+          "box": {
+            "prefixItems": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "number"
+              }
+            ],
+            "type": "array",
+            "maxItems": 4,
+            "minItems": 4,
+            "title": "Box"
+          },
+          "det_confidence": {
+            "type": "number",
+            "title": "Det Confidence",
+            "default": 0
+          },
+          "risk_pct": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Risk Pct",
+            "default": 0
+          },
+          "color": {
+            "type": "string",
+            "enum": [
+              "green",
+              "yellow",
+              "red"
+            ],
+            "title": "Color",
+            "default": "green"
+          }
+        },
+        "type": "object",
+        "required": [
+          "person_id",
+          "box"
+        ],
+        "title": "LiveTrack",
+        "description": "One detected person in one frame (REV.1 — mirrors sentry-ai's\nTrackPayload). Lenient: unknown keys ignored, display fields defaulted so a\nschema addition on the AI side never 422s the whole batch."
       },
       "LoginRequest": {
         "properties": {
