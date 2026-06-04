@@ -374,6 +374,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/analytics/alerts": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Alert Analytics
+         * @description Alert breakdown for the observability dashboard (docs/19 Phase 2): how
+         *     many suspicion alerts fired in `range`, split by VLM category, by review
+         *     level, and by day — so you see WHAT the system is catching, over time.
+         */
+        get: operations["alert_analytics_api_v1_admin_analytics_alerts_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/orgs": {
         parameters: {
             query?: never;
@@ -521,6 +543,29 @@ export interface paths {
         };
         /** List Ai Nodes */
         get: operations["list_ai_nodes_api_v1_admin_ai_nodes_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/ai-nodes/{node_id}/metrics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Ai Node Metrics
+         * @description Resource time-series (CPU/RAM/GPU) for the observability dashboard.
+         *
+         *     `range` = 1h | 6h | 24h | 7d | 30d. `bucket` = auto | raw | hour (auto picks
+         *     raw for ≤24h, hourly averages for wider ranges to keep the payload small).
+         */
+        get: operations["ai_node_metrics_api_v1_admin_ai_nodes__node_id__metrics_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -836,6 +881,26 @@ export interface components {
             cameras: number;
             /** Alerts */
             alerts: number;
+            /**
+             * Cameras Enabled
+             * @default 0
+             */
+            cameras_enabled: number;
+            /**
+             * Ai Nodes
+             * @default 0
+             */
+            ai_nodes: number;
+            /**
+             * Ai Nodes Online
+             * @default 0
+             */
+            ai_nodes_online: number;
+            /**
+             * Alerts 24H
+             * @default 0
+             */
+            alerts_24h: number;
         };
         /**
          * AgentCameraCreate
@@ -956,6 +1021,24 @@ export interface components {
             active_cameras?: number | null;
             /** Version */
             version?: string | null;
+            /** Health */
+            health?: {
+                [key: string]: boolean;
+            } | null;
+            /** Cpu Pct */
+            cpu_pct?: number | null;
+            /** Ram Used Mb */
+            ram_used_mb?: number | null;
+            /** Ram Total Mb */
+            ram_total_mb?: number | null;
+            /** Gpu Pct */
+            gpu_pct?: number | null;
+            /** Vram Used Mb */
+            vram_used_mb?: number | null;
+            /** Vram Total Mb */
+            vram_total_mb?: number | null;
+            /** Gpu Temp C */
+            gpu_temp_c?: number | null;
         };
         /**
          * AiNodePairRequest
@@ -2697,6 +2780,43 @@ export interface operations {
             };
         };
     };
+    alert_analytics_api_v1_admin_analytics_alerts_get: {
+        parameters: {
+            query?: {
+                range?: string;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_orgs_api_v1_admin_orgs_get: {
         parameters: {
             query?: never;
@@ -3074,6 +3194,46 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiNodePublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    ai_node_metrics_api_v1_admin_ai_nodes__node_id__metrics_get: {
+        parameters: {
+            query?: {
+                range?: string;
+                bucket?: string;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                node_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    }[];
                 };
             };
             /** @description Validation Error */

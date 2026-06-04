@@ -129,7 +129,19 @@ export const admin = {
     request<NodeMetric[]>(
       `/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}/metrics?range=${encodeURIComponent(range)}`,
     ),
+  alertAnalytics: (range: string) =>
+    request<AlertAnalytics>(
+      `/api/v1/admin/analytics/alerts?range=${encodeURIComponent(range)}`,
+    ),
 };
+
+/** Alert breakdown for the dashboard (docs/19 Phase 2). */
+export interface AlertAnalytics {
+  total: number;
+  by_category: Record<string, number>;
+  by_level: Record<string, number>;
+  by_day: { day: string; count: number }[];
+}
 
 /** One resource sample from the AI-node metrics time-series (docs/19). */
 export interface NodeMetric {

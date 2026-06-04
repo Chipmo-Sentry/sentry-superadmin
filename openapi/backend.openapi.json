@@ -2167,6 +2167,84 @@
         }
       }
     },
+    "/api/v1/admin/analytics/alerts": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Alert Analytics",
+        "description": "Alert breakdown for the observability dashboard (docs/19 Phase 2): how\nmany suspicion alerts fired in `range`, split by VLM category, by review\nlevel, and by day — so you see WHAT the system is catching, over time.",
+        "operationId": "alert_analytics_api_v1_admin_analytics_alerts_get",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "7d",
+              "title": "Range"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Alert Analytics Api V1 Admin Analytics Alerts Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/orgs": {
       "get": {
         "tags": [
@@ -2981,6 +3059,107 @@
                     "$ref": "#/components/schemas/AiNodePublic"
                   },
                   "title": "Response List Ai Nodes Api V1 Admin Ai Nodes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/ai-nodes/{node_id}/metrics": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Ai Node Metrics",
+        "description": "Resource time-series (CPU/RAM/GPU) for the observability dashboard.\n\n`range` = 1h | 6h | 24h | 7d | 30d. `bucket` = auto | raw | hour (auto picks\nraw for ≤24h, hourly averages for wider ranges to keep the payload small).",
+        "operationId": "ai_node_metrics_api_v1_admin_ai_nodes__node_id__metrics_get",
+        "parameters": [
+          {
+            "name": "node_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Node Id"
+            }
+          },
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "24h",
+              "title": "Range"
+            }
+          },
+          {
+            "name": "bucket",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "auto",
+              "title": "Bucket"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "additionalProperties": true
+                  },
+                  "title": "Response Ai Node Metrics Api V1 Admin Ai Nodes  Node Id  Metrics Get"
                 }
               }
             }
@@ -4168,6 +4347,26 @@
           "alerts": {
             "type": "integer",
             "title": "Alerts"
+          },
+          "cameras_enabled": {
+            "type": "integer",
+            "title": "Cameras Enabled",
+            "default": 0
+          },
+          "ai_nodes": {
+            "type": "integer",
+            "title": "Ai Nodes",
+            "default": 0
+          },
+          "ai_nodes_online": {
+            "type": "integer",
+            "title": "Ai Nodes Online",
+            "default": 0
+          },
+          "alerts_24h": {
+            "type": "integer",
+            "title": "Alerts 24H",
+            "default": 0
           }
         },
         "type": "object",
@@ -4197,7 +4396,8 @@
           "mediamtx_path": {
             "anyOf": [
               {
-                "type": "string"
+                "type": "string",
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
               },
               {
                 "type": "null"
@@ -4457,6 +4657,97 @@
               }
             ],
             "title": "Version"
+          },
+          "health": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "boolean"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Health"
+          },
+          "cpu_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Pct"
+          },
+          "ram_used_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ram Used Mb"
+          },
+          "ram_total_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ram Total Mb"
+          },
+          "gpu_pct": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Pct"
+          },
+          "vram_used_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram Used Mb"
+          },
+          "vram_total_mb": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram Total Mb"
+          },
+          "gpu_temp_c": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Temp C"
           }
         },
         "type": "object",
@@ -5163,8 +5454,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 64,
-                "minLength": 1
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
               },
               {
                 "type": "null"
@@ -5329,8 +5619,7 @@
             "anyOf": [
               {
                 "type": "string",
-                "maxLength": 64,
-                "minLength": 1
+                "pattern": "^[a-z0-9][a-z0-9_-]{0,63}$"
               },
               {
                 "type": "null"
