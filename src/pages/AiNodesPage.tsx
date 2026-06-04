@@ -21,8 +21,10 @@ import {
   TableHeader,
   TableRow,
 } from "@chipmo-sentry/ui-kit";
-import { Cpu, Download, MoreHorizontal, Plus } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Cpu, Download, LineChart, MoreHorizontal, Plus } from "lucide-react";
+import { Fragment, useEffect, useState } from "react";
+
+import { NodeMetricsChart } from "@/components/NodeMetricsChart";
 
 import { Field } from "@/components/Field";
 import { admin } from "@/lib/api";
@@ -124,6 +126,7 @@ export function AiNodesPage() {
   const [error, setError] = useState<string | null>(null);
   const [pairing, setPairing] = useState<AiNodePairingCode | null>(null);
   const [editing, setEditing] = useState<AiNodePublic | null>(null);
+  const [expanded, setExpanded] = useState<string | null>(null);
 
   async function reload() {
     try {
@@ -204,7 +207,8 @@ export function AiNodesPage() {
               </TableHeader>
               <TableBody>
                 {nodes.map((n) => (
-                  <TableRow key={n.id}>
+                  <Fragment key={n.id}>
+                  <TableRow>
                     <TableCell>
                       <div className="font-medium">{n.name || n.hostname || "—"}</div>
                       <div className="text-xs text-[var(--color-muted-foreground)]">
@@ -235,25 +239,43 @@ export function AiNodesPage() {
                       {n.provider} · skip {n.frame_skip}
                     </TableCell>
                     <TableCell>
-                      <Dropdown>
-                        <DropdownTrigger asChild>
-                          <Button variant="ghost" size="sm" aria-label="Үйлдэл">
-                            <MoreHorizontal className="h-4 w-4" />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownContent align="end">
-                          <DropdownItem onSelect={() => setEditing(n)}>
-                            Тохиргоо засах
-                          </DropdownItem>
-                          {n.is_active && (
-                            <DropdownItem onSelect={() => void revoke(n)}>
-                              Цуцлах
+                      <div className="flex items-center justify-end gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          aria-label="Метрик"
+                          onClick={() => setExpanded(expanded === n.id ? null : n.id)}
+                        >
+                          <LineChart className="h-4 w-4" />
+                        </Button>
+                        <Dropdown>
+                          <DropdownTrigger asChild>
+                            <Button variant="ghost" size="sm" aria-label="Үйлдэл">
+                              <MoreHorizontal className="h-4 w-4" />
+                            </Button>
+                          </DropdownTrigger>
+                          <DropdownContent align="end">
+                            <DropdownItem onSelect={() => setEditing(n)}>
+                              Тохиргоо засах
                             </DropdownItem>
-                          )}
-                        </DropdownContent>
-                      </Dropdown>
+                            {n.is_active && (
+                              <DropdownItem onSelect={() => void revoke(n)}>
+                                Цуцлах
+                              </DropdownItem>
+                            )}
+                          </DropdownContent>
+                        </Dropdown>
+                      </div>
                     </TableCell>
                   </TableRow>
+                  {expanded === n.id && (
+                    <TableRow>
+                      <TableCell colSpan={7}>
+                        <NodeMetricsChart nodeId={n.id} />
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  </Fragment>
                 ))}
               </TableBody>
             </Table>

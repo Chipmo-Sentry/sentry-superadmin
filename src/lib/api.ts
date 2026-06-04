@@ -25,7 +25,11 @@ import type {
   UserPublic,
 } from "./types";
 
-const BASE = import.meta.env.VITE_API_BASE_URL ?? "http://localhost:8000";
+// Empty default → all requests are relative and flow through the same-origin
+// proxy (server.mjs in prod, Vite `server.proxy` in dev), so the backend's
+// host-only SameSite=Lax cookie is sent. Do NOT set VITE_API_BASE_URL to an
+// absolute cross-site host — that drops the cookie and breaks admin login.
+const BASE = import.meta.env.VITE_API_BASE_URL ?? "";
 
 export class ApiError extends Error {
   constructor(
@@ -121,7 +125,25 @@ export const admin = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+  nodeMetrics: (nodeId: string, range: string) =>
+    request<NodeMetric[]>(
+      `/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}/metrics?range=${encodeURIComponent(range)}`,
+    ),
 };
+
+/** One resource sample from the AI-node metrics time-series (docs/19). */
+export interface NodeMetric {
+  ts: string;
+  cpu_pct: number | null;
+  ram_used_mb: number | null;
+  ram_total_mb: number | null;
+  gpu_pct: number | null;
+  vram_used_mb: number | null;
+  vram_total_mb: number | null;
+  gpu_temp_c: number | null;
+  fps_inference: number | null;
+  active_cameras: number | null;
+}
 
 export const behaviors = {
   get: () => request<BehaviorConfig>("/api/v1/behaviors"),
