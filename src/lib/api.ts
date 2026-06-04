@@ -133,7 +133,33 @@ export const admin = {
     request<AlertAnalytics>(
       `/api/v1/admin/analytics/alerts?range=${encodeURIComponent(range)}`,
     ),
+  feedbackAnalytics: (range: string) =>
+    request<FeedbackAnalytics>(
+      `/api/v1/admin/analytics/feedback?range=${encodeURIComponent(range)}`,
+    ),
 };
+
+/** Feedback-loop breakdown + tuning suggestions (docs/19 Phase 3). */
+export interface FeedbackCategoryStat {
+  true_positive: number;
+  false_positive: number;
+  unclear: number;
+  total: number;
+  fp_rate: number;
+}
+export interface FeedbackSuggestion {
+  category: string;
+  fp_rate: number;
+  samples: number;
+  action: string;
+  hint: string;
+}
+export interface FeedbackAnalytics {
+  total: number;
+  totals: { true_positive: number; false_positive: number; unclear: number };
+  by_category: Record<string, FeedbackCategoryStat>;
+  suggestions: FeedbackSuggestion[];
+}
 
 /** Alert breakdown for the dashboard (docs/19 Phase 2). */
 export interface AlertAnalytics {

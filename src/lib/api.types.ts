@@ -396,6 +396,30 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/admin/analytics/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Feedback Analytics
+         * @description Close the feedback loop (docs/19 Phase 3). Joins staff verdicts (Feedback)
+         *     to the alert's VLM category and reports, per category, how many were marked
+         *     true_positive / false_positive / unclear + the false-alarm rate — plus
+         *     read-only TUNING SUGGESTIONS for noisy categories (high FP rate). Applying a
+         *     suggestion (weight/threshold change) stays a human action for now.
+         */
+        get: operations["feedback_analytics_api_v1_admin_analytics_feedback_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/admin/orgs": {
         parameters: {
             query?: never;
@@ -2781,6 +2805,43 @@ export interface operations {
         };
     };
     alert_analytics_api_v1_admin_analytics_alerts_get: {
+        parameters: {
+            query?: {
+                range?: string;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    feedback_analytics_api_v1_admin_analytics_feedback_get: {
         parameters: {
             query?: {
                 range?: string;

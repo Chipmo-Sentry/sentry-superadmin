@@ -2245,6 +2245,84 @@
         }
       }
     },
+    "/api/v1/admin/analytics/feedback": {
+      "get": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Feedback Analytics",
+        "description": "Close the feedback loop (docs/19 Phase 3). Joins staff verdicts (Feedback)\nto the alert's VLM category and reports, per category, how many were marked\ntrue_positive / false_positive / unclear + the false-alarm rate — plus\nread-only TUNING SUGGESTIONS for noisy categories (high FP rate). Applying a\nsuggestion (weight/threshold change) stays a human action for now.",
+        "operationId": "feedback_analytics_api_v1_admin_analytics_feedback_get",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "30d",
+              "title": "Range"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": true,
+                  "title": "Response Feedback Analytics Api V1 Admin Analytics Feedback Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/admin/orgs": {
       "get": {
         "tags": [
