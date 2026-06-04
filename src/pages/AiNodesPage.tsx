@@ -45,13 +45,23 @@ function isOnline(node: AiNodePublic): boolean {
   return !Number.isNaN(t) && Date.now() - t < ONLINE_WINDOW_MS;
 }
 
+const gb = (mb: unknown): string => (Number(mb) / 1024).toFixed(1);
+
 function telemetrySummary(raw: string | null): string {
   if (!raw) return "—";
   try {
     const t = JSON.parse(raw) as Record<string, unknown>;
     const parts: string[] = [];
+    // Resource load (docs/19): CPU / RAM / GPU / VRAM / temp, then FPS + cameras.
+    if (t.cpu_pct != null) parts.push(`CPU ${Number(t.cpu_pct).toFixed(0)}%`);
+    if (t.ram_used_mb != null && t.ram_total_mb != null)
+      parts.push(`RAM ${gb(t.ram_used_mb)}/${gb(t.ram_total_mb)} GB`);
+    if (t.gpu_pct != null) parts.push(`GPU ${Number(t.gpu_pct)}%`);
+    if (t.vram_used_mb != null && t.vram_total_mb != null)
+      parts.push(`VRAM ${gb(t.vram_used_mb)}/${gb(t.vram_total_mb)} GB`);
+    else if (t.vram_mb != null) parts.push(`${t.vram_mb} MB VRAM`);
+    if (t.gpu_temp_c != null) parts.push(`${Number(t.gpu_temp_c)}°C`);
     if (t.fps_inference != null) parts.push(`${Number(t.fps_inference).toFixed(1)} FPS`);
-    if (t.vram_mb != null) parts.push(`${t.vram_mb} MB VRAM`);
     if (t.active_cameras != null) parts.push(`${t.active_cameras} камер`);
     return parts.length ? parts.join(" · ") : "—";
   } catch {
