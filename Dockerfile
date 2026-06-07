@@ -25,9 +25,10 @@ WORKDIR /app/sentry-superadmin
 COPY package.json package-lock.json* ./
 RUN npm ci --no-audit --no-fund
 
-# VITE_* is inlined at build time → declare as build arg (Railway passes vars).
-ARG VITE_API_BASE_URL
-ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+# IMPORTANT: do NOT bake VITE_API_BASE_URL. The app talks same-origin and
+# server.mjs proxies /api to BACKEND_ORIGIN (a RUNTIME var). Baking an absolute
+# API base makes the browser call a cross-site host, dropping the SameSite=Lax
+# auth cookie → admin login silently fails (ADR-0017).
 
 COPY . .
 RUN npm run build
