@@ -11,7 +11,7 @@ type Schemas = components["schemas"];
 
 // === Auth ===
 export type UserPublic = Schemas["UserPublic"];
-export type TokenPair = Schemas["TokenPair"];
+// Tokens live only in httpOnly cookies (ADR-0017) — no TokenPair in the API body.
 export type LoginResponse = Schemas["LoginResponse"];
 
 // === Org / admin ===

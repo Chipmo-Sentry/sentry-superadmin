@@ -108,15 +108,8 @@
           }
         ],
         "responses": {
-          "200": {
-            "description": "Successful Response",
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/TokenPair"
-                }
-              }
-            }
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -1105,6 +1098,98 @@
         }
       }
     },
+    "/api/v1/cameras/{camera_id}/stream-token": {
+      "get": {
+        "tags": [
+          "cameras"
+        ],
+        "summary": "Get Stream Token",
+        "description": "Mint a short-lived WHEP/HLS read token for a camera the caller owns.\n\nAny org member (read access) may watch; the token confines playback to this\ncamera's mediamtx_path and is validated by the MediaMTX authHTTP endpoint.",
+        "operationId": "get_stream_token_api_v1_cameras__camera_id__stream_token_get",
+        "parameters": [
+          {
+            "name": "camera_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Camera Id"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/StreamTokenResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/clips": {
       "post": {
         "tags": [
@@ -1978,6 +2063,59 @@
         }
       }
     },
+    "/api/v1/internal/mediamtx-auth": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Mediamtx Auth",
+        "description": "MediaMTX authHTTP authorizer (replaces MediaMTX's open `user: any` read).\n\n- read/playback → require a valid per-camera stream token in the query\n- publish       → MediaMTX publish creds\n- api/metrics/pprof → MediaMTX control-API creds\nReturns 204 to allow, 401 to deny. Optionally gated by a shared secret so\nonly the MediaMTX host can call it.",
+        "operationId": "mediamtx_auth_api_v1_internal_mediamtx_auth_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MediaMtxAuthRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/alerts": {
       "post": {
         "tags": [
@@ -2085,6 +2223,134 @@
                     "type": "integer"
                   },
                   "title": "Response Receive Live Metadata Api V1 Internal Live Metadata Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/rag/cases": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Rag Add Case",
+        "description": "Store a staff-verified event (embedded by the AI node) for future RAG\nretrieval. Called when feedback confirms/denies a suspicion.",
+        "operationId": "rag_add_case_api_v1_internal_rag_cases_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RagCaseCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "object",
+                  "additionalProperties": {
+                    "type": "string"
+                  },
+                  "title": "Response Rag Add Case Api V1 Internal Rag Cases Post"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/rag/similar": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Rag Similar",
+        "description": "Top-k past verified cases most similar to the query embedding — the AI\nnode injects these into the VLM verify prompt as few-shot examples.",
+        "operationId": "rag_similar_api_v1_internal_rag_similar_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RagSimilarRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/RagCaseMatch"
+                  },
+                  "title": "Response Rag Similar Api V1 Internal Rag Similar Post"
                 }
               }
             }
@@ -6375,17 +6641,45 @@
         "properties": {
           "user": {
             "$ref": "#/components/schemas/UserPublic"
-          },
-          "tokens": {
-            "$ref": "#/components/schemas/TokenPair"
           }
         },
         "type": "object",
         "required": [
-          "user",
-          "tokens"
+          "user"
         ],
         "title": "LoginResponse"
+      },
+      "MediaMtxAuthRequest": {
+        "properties": {
+          "user": {
+            "type": "string",
+            "title": "User",
+            "default": ""
+          },
+          "password": {
+            "type": "string",
+            "title": "Password",
+            "default": ""
+          },
+          "action": {
+            "type": "string",
+            "title": "Action",
+            "default": ""
+          },
+          "path": {
+            "type": "string",
+            "title": "Path",
+            "default": ""
+          },
+          "query": {
+            "type": "string",
+            "title": "Query",
+            "default": ""
+          }
+        },
+        "type": "object",
+        "title": "MediaMtxAuthRequest",
+        "description": "MediaMTX authHTTP payload (subset we use). MediaMTX POSTs this on every\npublish/read/playback/api action when `authMethod: http`."
       },
       "OrgMemberPublic": {
         "properties": {
@@ -6491,6 +6785,134 @@
         ],
         "title": "PairingCodePublic",
         "description": "Returned to the admin UI after generating a code."
+      },
+      "RagCaseCreate": {
+        "properties": {
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
+          },
+          "verdict": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Verdict"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "description": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Description"
+          },
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Embedding"
+          }
+        },
+        "type": "object",
+        "required": [
+          "verdict",
+          "description",
+          "embedding"
+        ],
+        "title": "RagCaseCreate",
+        "description": "Store a verified event the AI node has embedded."
+      },
+      "RagCaseMatch": {
+        "properties": {
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "verdict": {
+            "type": "string",
+            "title": "Verdict"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "description",
+          "category",
+          "verdict",
+          "score"
+        ],
+        "title": "RagCaseMatch"
+      },
+      "RagSimilarRequest": {
+        "properties": {
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
+          },
+          "embedding": {
+            "items": {
+              "type": "number"
+            },
+            "type": "array",
+            "maxItems": 4096,
+            "minItems": 1,
+            "title": "Embedding"
+          },
+          "k": {
+            "type": "integer",
+            "maximum": 10,
+            "minimum": 1,
+            "title": "K",
+            "default": 3
+          }
+        },
+        "type": "object",
+        "required": [
+          "embedding"
+        ],
+        "title": "RagSimilarRequest",
+        "description": "Ask for the most similar past verified cases."
       },
       "StoreCreate": {
         "properties": {
@@ -6652,28 +7074,24 @@
         "type": "object",
         "title": "StoreUpdate"
       },
-      "TokenPair": {
+      "StreamTokenResponse": {
         "properties": {
-          "access_token": {
+          "token": {
             "type": "string",
-            "title": "Access Token"
+            "title": "Token"
           },
-          "refresh_token": {
-            "type": "string",
-            "title": "Refresh Token"
-          },
-          "token_type": {
-            "type": "string",
-            "title": "Token Type",
-            "default": "bearer"
+          "expires_in": {
+            "type": "integer",
+            "title": "Expires In"
           }
         },
         "type": "object",
         "required": [
-          "access_token",
-          "refresh_token"
+          "token",
+          "expires_in"
         ],
-        "title": "TokenPair"
+        "title": "StreamTokenResponse",
+        "description": "Short-lived per-camera WHEP/HLS read token (appended as ?jwt=…)."
       },
       "UserAdminUpdate": {
         "properties": {

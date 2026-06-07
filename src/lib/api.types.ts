@@ -163,6 +163,29 @@ export interface paths {
         patch: operations["update_camera_api_v1_cameras__camera_id__patch"];
         trace?: never;
     };
+    "/api/v1/cameras/{camera_id}/stream-token": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Stream Token
+         * @description Mint a short-lived WHEP/HLS read token for a camera the caller owns.
+         *
+         *     Any org member (read access) may watch; the token confines playback to this
+         *     camera's mediamtx_path and is validated by the MediaMTX authHTTP endpoint.
+         */
+        get: operations["get_stream_token_api_v1_cameras__camera_id__stream_token_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/clips": {
         parameters: {
             query?: never;
@@ -310,6 +333,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/mediamtx-auth": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Mediamtx Auth
+         * @description MediaMTX authHTTP authorizer (replaces MediaMTX's open `user: any` read).
+         *
+         *     - read/playback → require a valid per-camera stream token in the query
+         *     - publish       → MediaMTX publish creds
+         *     - api/metrics/pprof → MediaMTX control-API creds
+         *     Returns 204 to allow, 401 to deny. Optionally gated by a shared secret so
+         *     only the MediaMTX host can call it.
+         */
+        post: operations["mediamtx_auth_api_v1_internal_mediamtx_auth_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/alerts": {
         parameters: {
             query?: never;
@@ -351,6 +400,48 @@ export interface paths {
          *     threshold handler to fire alerts on sustained risk_pct breaches (L5).
          */
         post: operations["receive_live_metadata_api_v1_internal_live_metadata_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/rag/cases": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rag Add Case
+         * @description Store a staff-verified event (embedded by the AI node) for future RAG
+         *     retrieval. Called when feedback confirms/denies a suspicion.
+         */
+        post: operations["rag_add_case_api_v1_internal_rag_cases_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/rag/similar": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Rag Similar
+         * @description Top-k past verified cases most similar to the query embedding — the AI
+         *     node injects these into the VLM verify prompt as few-shot examples.
+         */
+        post: operations["rag_similar_api_v1_internal_rag_similar_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1673,7 +1764,38 @@ export interface components {
         /** LoginResponse */
         LoginResponse: {
             user: components["schemas"]["UserPublic"];
-            tokens: components["schemas"]["TokenPair"];
+        };
+        /**
+         * MediaMtxAuthRequest
+         * @description MediaMTX authHTTP payload (subset we use). MediaMTX POSTs this on every
+         *     publish/read/playback/api action when `authMethod: http`.
+         */
+        MediaMtxAuthRequest: {
+            /**
+             * User
+             * @default
+             */
+            user: string;
+            /**
+             * Password
+             * @default
+             */
+            password: string;
+            /**
+             * Action
+             * @default
+             */
+            action: string;
+            /**
+             * Path
+             * @default
+             */
+            path: string;
+            /**
+             * Query
+             * @default
+             */
+            query: string;
         };
         /**
          * OrgMemberPublic
@@ -1730,6 +1852,48 @@ export interface components {
              */
             expires_at: string;
         };
+        /**
+         * RagCaseCreate
+         * @description Store a verified event the AI node has embedded.
+         */
+        RagCaseCreate: {
+            /** Store Id */
+            store_id?: string | null;
+            /** Verdict */
+            verdict: string;
+            /** Category */
+            category?: string | null;
+            /** Description */
+            description: string;
+            /** Embedding */
+            embedding: number[];
+        };
+        /** RagCaseMatch */
+        RagCaseMatch: {
+            /** Description */
+            description: string;
+            /** Category */
+            category: string | null;
+            /** Verdict */
+            verdict: string;
+            /** Score */
+            score: number;
+        };
+        /**
+         * RagSimilarRequest
+         * @description Ask for the most similar past verified cases.
+         */
+        RagSimilarRequest: {
+            /** Store Id */
+            store_id?: string | null;
+            /** Embedding */
+            embedding: number[];
+            /**
+             * K
+             * @default 3
+             */
+            k: number;
+        };
         /** StoreCreate */
         StoreCreate: {
             /** Name */
@@ -1781,17 +1945,15 @@ export interface components {
             /** Telegram Chat Id */
             telegram_chat_id?: string | null;
         };
-        /** TokenPair */
-        TokenPair: {
-            /** Access Token */
-            access_token: string;
-            /** Refresh Token */
-            refresh_token: string;
-            /**
-             * Token Type
-             * @default bearer
-             */
-            token_type: string;
+        /**
+         * StreamTokenResponse
+         * @description Short-lived per-camera WHEP/HLS read token (appended as ?jwt=…).
+         */
+        StreamTokenResponse: {
+            /** Token */
+            token: string;
+            /** Expires In */
+            expires_in: number;
         };
         /**
          * UserAdminUpdate
@@ -1951,13 +2113,11 @@ export interface operations {
         requestBody?: never;
         responses: {
             /** @description Successful Response */
-            200: {
+            204: {
                 headers: {
                     [name: string]: unknown;
                 };
-                content: {
-                    "application/json": components["schemas"]["TokenPair"];
-                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -2369,6 +2529,42 @@ export interface operations {
             };
         };
     };
+    get_stream_token_api_v1_cameras__camera_id__stream_token_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                camera_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["StreamTokenResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_clips_api_v1_clips_get: {
         parameters: {
             query?: {
@@ -2699,6 +2895,39 @@ export interface operations {
             };
         };
     };
+    mediamtx_auth_api_v1_internal_mediamtx_auth_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MediaMtxAuthRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     create_alert_from_ai_api_v1_internal_alerts_post: {
         parameters: {
             query?: never;
@@ -2758,6 +2987,78 @@ export interface operations {
                     "application/json": {
                         [key: string]: number;
                     };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rag_add_case_api_v1_internal_rag_cases_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RagCaseCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: string;
+                    };
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    rag_similar_api_v1_internal_rag_similar_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RagSimilarRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RagCaseMatch"][];
                 };
             };
             /** @description Validation Error */

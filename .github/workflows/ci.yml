@@ -30,8 +30,14 @@ jobs:
         # ui-kit is a public sibling repo consumed via file:../sentry-ui-kit.
         # Clone + build it so the named exports + dist/styles.css resolve for
         # typecheck and the Vite build (a stub would miss the real exports).
+        #
+        # PINNED to the SAME tag as Dockerfile's UI_KIT_REF — clone `main` here
+        # would let CI pass against a newer ui-kit than the image ships, so a
+        # breaking change slips to prod. Bump both together on a ui-kit release.
+        env:
+          UI_KIT_REF: v0.1.0
         run: |
-          git clone --depth 1 --branch main \
+          git clone --depth 1 --branch "${UI_KIT_REF}" \
             https://github.com/Chipmo-Sentry/sentry-ui-kit.git ../sentry-ui-kit
           (cd ../sentry-ui-kit && npm ci --no-audit --no-fund && npm run build)
 
