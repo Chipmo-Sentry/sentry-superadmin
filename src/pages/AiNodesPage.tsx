@@ -31,10 +31,6 @@ import { admin } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
 const PROVIDERS = ["minicpm-v-2.6", "qwen2.5-vl-7b"];
-// 5 min: the heartbeat thread shares the GIL with the GPU live-workers, so a beat
-// can be delayed a minute or two under load. A 5-min window stops the node from
-// flapping online↔offline between beats while still flagging a truly dead node.
-const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
 /** Latest published AI server installer (GitHub Releases). `latest/download`
  * always resolves to the newest release asset, so this never needs bumping. */
@@ -43,12 +39,6 @@ const AI_SETUP_DOWNLOAD_URL =
 
 const selectClass =
   "h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm disabled:opacity-50";
-
-function isOnline(node: AiNodePublic): boolean {
-  if (!node.last_seen_at) return false;
-  const t = new Date(node.last_seen_at).getTime();
-  return !Number.isNaN(t) && Date.now() - t < ONLINE_WINDOW_MS;
-}
 
 const gb = (mb: unknown): string => (Number(mb) / 1024).toFixed(1);
 
@@ -239,7 +229,7 @@ export function AiNodesPage() {
                     <TableCell>
                       {!n.is_active ? (
                         <Badge tone="danger">Цуцалсан</Badge>
-                      ) : isOnline(n) ? (
+                      ) : n.is_online ? (
                         <Badge tone="success">Online</Badge>
                       ) : (
                         <Badge tone="neutral">Offline</Badge>

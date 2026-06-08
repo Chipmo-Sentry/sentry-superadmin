@@ -723,6 +723,85 @@ export interface paths {
         patch: operations["update_ai_node_api_v1_admin_ai_nodes__node_id__patch"];
         trace?: never;
     };
+    "/api/v1/org/members": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Members
+         * @description Members of the caller's org (any member may view their own team).
+         */
+        get: operations["list_members_api_v1_org_members_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/invitations": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Invitations */
+        get: operations["list_invitations_api_v1_org_invitations_get"];
+        put?: never;
+        /**
+         * Create Invitation
+         * @description Invite an email to the caller's org. Emails a tokenized accept link;
+         *     if SMTP isn't configured the link is returned for manual sharing.
+         */
+        post: operations["create_invitation_api_v1_org_invitations_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/members/{user_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /** Remove Member */
+        delete: operations["remove_member_api_v1_org_members__user_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org/accept-invite": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Accept Invite
+         * @description Public — the invitee sets their password to create the account + join.
+         */
+        post: operations["accept_invite_api_v1_org_accept_invite_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/stores/{store_id}/pairing-codes": {
         parameters: {
             query?: never;
@@ -982,6 +1061,16 @@ export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
         /**
+         * AcceptInvite
+         * @description Public — the invitee sets their own password to activate the account.
+         */
+        AcceptInvite: {
+            /** Token */
+            token: string;
+            /** Password */
+            password: string;
+        };
+        /**
          * AdminStats
          * @description Top-level counts for the super-admin dashboard.
          */
@@ -1154,6 +1243,12 @@ export interface components {
             vram_total_mb?: number | null;
             /** Gpu Temp C */
             gpu_temp_c?: number | null;
+            /** Sentry Cpu Pct */
+            sentry_cpu_pct?: number | null;
+            /** Sentry Ram Mb */
+            sentry_ram_mb?: number | null;
+            /** Sentry Vram Mb */
+            sentry_vram_mb?: number | null;
         };
         /**
          * AiNodePairRequest
@@ -1223,11 +1318,13 @@ export interface components {
             provider: string;
             /** Frame Skip */
             frame_skip: number;
+            /** Created At */
+            created_at: string | null;
             /**
-             * Created At
-             * Format: date-time
+             * Is Online
+             * @description Server-computed online status — independent of the viewer's clock.
              */
-            created_at: string;
+            readonly is_online: boolean;
         };
         /**
          * AiNodeUpdate
@@ -1646,6 +1743,43 @@ export interface components {
             detail?: components["schemas"]["ValidationError"][];
         };
         /**
+         * InviteCreate
+         * @description Org owner/admin invites an email to their org with a role.
+         */
+        InviteCreate: {
+            /**
+             * Email
+             * Format: email
+             */
+            email: string;
+            /** @default staff */
+            role: components["schemas"]["OrgRole"];
+        };
+        /**
+         * InviteResult
+         * @description Returned after creating an invite. `invite_url` lets the admin share the
+         *     link manually when email isn't configured (`emailed=false`).
+         */
+        InviteResult: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            role: components["schemas"]["OrgRole"];
+            /** Invite Url */
+            invite_url: string;
+            /** Emailed */
+            emailed: boolean;
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+        };
+        /**
          * LeadCreate
          * @description Public landing-page submission.
          *
@@ -1897,6 +2031,27 @@ export interface components {
              * Format: date-time
              */
             expires_at: string;
+        };
+        /** PendingInvite */
+        PendingInvite: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Email */
+            email: string;
+            role: components["schemas"]["OrgRole"];
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
         };
         /**
          * RagCaseCreate
@@ -3723,6 +3878,179 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AiNodePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_members_api_v1_org_members_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgMemberPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_invitations_api_v1_org_invitations_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PendingInvite"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_invitation_api_v1_org_invitations_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["InviteCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InviteResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    remove_member_api_v1_org_members__user_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    accept_invite_api_v1_org_accept_invite_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AcceptInvite"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UserPublic"];
                 };
             };
             /** @description Validation Error */
