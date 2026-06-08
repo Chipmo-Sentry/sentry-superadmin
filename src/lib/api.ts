@@ -181,6 +181,10 @@ export interface NodeMetric {
   gpu_temp_c: number | null;
   fps_inference: number | null;
   active_cameras: number | null;
+  // Sentry-project-only (process-scoped) usage, vs the whole-machine fields above.
+  sentry_cpu_pct: number | null;
+  sentry_ram_mb: number | null;
+  sentry_vram_mb: number | null;
 }
 
 export const behaviors = {

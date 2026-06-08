@@ -3,10 +3,11 @@
  * /admin/ai-nodes/{id}/metrics?range= and draws lightweight inline-SVG charts
  * (CPU% / GPU% / RAM% / VRAM%) with a range switcher — no charting lib.
  *
- * Each chart has: a TIME x-axis (points placed by real timestamp in [now-range,
- * now]; line breaks across offline gaps; numeric time tick labels at the foot),
- * horizontal + vertical gridlines, and a hover crosshair (vertical guide line +
- * dot + tooltip with the precise time and the sample value).
+ * Each chart has a TIME x-axis (points placed by real timestamp in [now-range,
+ * now]; line breaks across offline gaps; numeric tick labels at the foot),
+ * gridlines, and a hover crosshair (guide line + dot + tooltip with the precise
+ * time and value). A solid line = WHOLE machine; a dashed line = SENTRY-only
+ * (this project's processes), where the backend reports it.
  */
 import { type MouseEvent, useEffect, useState } from "react";
 
@@ -33,7 +34,6 @@ const RANGE_MS: Record<string, number> = {
 type Pt = { t: number; v: number | null; label: string | null };
 
 const p2 = (n: number) => String(n).padStart(2, "0");
-/** Tick label whose precision matches the window: HH:mm for ≤1 day, else M/D[ HH:mm]. */
 function fmtTick(t: number, windowMs: number): string {
   const d = new Date(t);
   const hm = `${p2(d.getHours())}:${p2(d.getMinutes())}`;
@@ -41,22 +41,53 @@ function fmtTick(t: number, windowMs: number): string {
   const md = `${d.getMonth() + 1}/${d.getDate()}`;
   return windowMs <= 7 * DAY ? `${md} ${hm}` : md;
 }
-/** Precise hover time: HH:mm:ss for ≤1 day, else M/D HH:mm:ss. */
 function fmtPrecise(t: number, windowMs: number): string {
   const d = new Date(t);
   const hms = `${p2(d.getHours())}:${p2(d.getMinutes())}:${p2(d.getSeconds())}`;
   return windowMs <= DAY ? hms : `${d.getMonth() + 1}/${d.getDate()} ${hms}`;
 }
 
-/** Chart geometry (viewBox units; preserveAspectRatio=none stretches to width). */
 const W = 240;
 const H = 64;
-const Y_GRID = [0, 25, 50, 75, 100]; // percent lines
+const Y_GRID = [0, 25, 50, 75, 100];
+
+/** Split a series into continuous segments, breaking on null values or gaps. */
+function segmentize(
+  series: Pt[],
+  gapMs: number,
+  xOf: (t: number) => number,
+  yOf: (v: number) => number,
+): { x: number; y: number }[][] {
+  const out: { x: number; y: number }[][] = [];
+  let cur: { x: number; y: number }[] = [];
+  let prevT: number | null = null;
+  for (const p of series) {
+    const gap = prevT != null && p.t - prevT > gapMs;
+    if ((p.v == null || gap) && cur.length) {
+      out.push(cur);
+      cur = [];
+    }
+    if (p.v != null) cur.push({ x: xOf(p.t), y: yOf(p.v) });
+    prevT = p.t;
+  }
+  if (cur.length) out.push(cur);
+  return out;
+}
+
+function nearest(series: Pt[], t: number): Pt | null {
+  let best: Pt | null = null;
+  for (const p of series) {
+    if (p.v == null) continue;
+    if (!best || Math.abs(p.t - t) < Math.abs(best.t - t)) best = p;
+  }
+  return best;
+}
 
 function Chart({
   label,
   color,
   series,
+  series2,
   windowStart,
   windowMs,
   gapMs,
@@ -66,6 +97,7 @@ function Chart({
   label: string;
   color: string;
   series: Pt[];
+  series2?: Pt[];
   windowStart: number;
   windowMs: number;
   gapMs: number;
@@ -75,38 +107,21 @@ function Chart({
   const xOf = (t: number) => Math.max(0, Math.min(1, (t - windowStart) / windowMs)) * W;
   const yOf = (v: number) => H - (Math.max(0, Math.min(100, v)) / 100) * H;
 
-  const [hover, setHover] = useState<{ cx: number; cy: number; pt: Pt } | null>(null);
+  const [hoverT, setHoverT] = useState<number | null>(null);
 
-  // Continuous segments: break on null value or a too-large time gap.
-  const segments: { x: number; y: number }[][] = [];
-  let cur: { x: number; y: number }[] = [];
-  let prevT: number | null = null;
-  for (const p of series) {
-    const gap = prevT != null && p.t - prevT > gapMs;
-    if ((p.v == null || gap) && cur.length) {
-      segments.push(cur);
-      cur = [];
-    }
-    if (p.v != null) cur.push({ x: xOf(p.t), y: yOf(p.v) });
-    prevT = p.t;
-  }
-  if (cur.length) segments.push(cur);
-
-  const drawable = series.filter((p) => p.v != null);
+  const seg1 = segmentize(series, gapMs, xOf, yOf);
+  const seg2 = series2 ? segmentize(series2, gapMs, xOf, yOf) : [];
 
   function onMove(e: MouseEvent<HTMLDivElement>) {
-    if (!drawable.length) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const frac = (e.clientX - rect.left) / rect.width;
-    const tHover = windowStart + frac * windowMs;
-    let best = drawable[0];
-    for (const p of drawable) {
-      if (Math.abs(p.t - tHover) < Math.abs(best.t - tHover)) best = p;
-    }
-    setHover({ cx: xOf(best.t), cy: yOf(best.v as number), pt: best });
+    setHoverT(windowStart + frac * windowMs);
   }
 
-  const tipLeftPct = hover ? Math.max(2, Math.min(98, (hover.cx / W) * 100)) : 0;
+  const hp = hoverT != null ? nearest(series, hoverT) : null;
+  const hp2 = hoverT != null && series2 ? nearest(series2, hoverT) : null;
+  const hx = hp ? xOf(hp.t) : 0;
+  const tipLeftPct = Math.max(2, Math.min(98, (hx / W) * 100));
 
   return (
     <div>
@@ -116,9 +131,8 @@ function Chart({
           {latest}
         </span>
       </div>
-      <div className="relative" onMouseMove={onMove} onMouseLeave={() => setHover(null)}>
+      <div className="relative" onMouseMove={onMove} onMouseLeave={() => setHoverT(null)}>
         <svg width="100%" height={H} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="none">
-          {/* horizontal gridlines (0/25/50/75/100%) */}
           {Y_GRID.map((g) => {
             const y = yOf(g);
             return (
@@ -134,59 +148,70 @@ function Chart({
               />
             );
           })}
-          {/* vertical gridlines at each time tick */}
-          {ticks.map((t, i) => {
-            const x = xOf(t);
-            return (
-              <line
-                key={`v${i}`}
-                x1={x}
-                y1={0}
-                x2={x}
-                y2={H}
-                stroke="var(--color-border)"
-                strokeWidth={0.5}
-                strokeOpacity={0.35}
-              />
-            );
-          })}
-          {/* data */}
-          {segments.map((seg, i) => {
+          {ticks.map((t, i) => (
+            <line
+              key={`v${i}`}
+              x1={xOf(t)}
+              y1={0}
+              x2={xOf(t)}
+              y2={H}
+              stroke="var(--color-border)"
+              strokeWidth={0.5}
+              strokeOpacity={0.35}
+            />
+          ))}
+          {/* whole-machine (solid + area) */}
+          {seg1.map((seg, i) => {
             if (seg.length === 1) {
-              return <circle key={i} cx={seg[0].x} cy={seg[0].y} r={1.8} fill={color} />;
+              return <circle key={`a${i}`} cx={seg[0].x} cy={seg[0].y} r={1.8} fill={color} />;
             }
             const line = seg.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
             const area = `${seg[0].x.toFixed(1)},${H} ${line} ${seg[seg.length - 1].x.toFixed(1)},${H}`;
             return (
-              <g key={i}>
+              <g key={`a${i}`}>
                 <polyline points={area} fill={color} fillOpacity={0.12} stroke="none" />
                 <polyline points={line} fill="none" stroke={color} strokeWidth={1.5} />
               </g>
             );
           })}
-          {/* hover crosshair */}
-          {hover && (
+          {/* sentry-only (dashed, no area) */}
+          {seg2.map((seg, i) =>
+            seg.length === 1 ? (
+              <circle key={`b${i}`} cx={seg[0].x} cy={seg[0].y} r={1.6} fill={color} fillOpacity={0.7} />
+            ) : (
+              <polyline
+                key={`b${i}`}
+                points={seg.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ")}
+                fill="none"
+                stroke={color}
+                strokeWidth={1.2}
+                strokeDasharray="3 2"
+                strokeOpacity={0.85}
+              />
+            ),
+          )}
+          {hp && (
             <>
-              <line x1={hover.cx} y1={0} x2={hover.cx} y2={H} stroke={color} strokeOpacity={0.6} strokeWidth={1} />
-              <circle cx={hover.cx} cy={hover.cy} r={2.8} fill={color} stroke="white" strokeWidth={1} />
+              <line x1={hx} y1={0} x2={hx} y2={H} stroke={color} strokeOpacity={0.6} strokeWidth={1} />
+              <circle cx={hx} cy={yOf(hp.v as number)} r={2.8} fill={color} stroke="white" strokeWidth={1} />
             </>
           )}
         </svg>
-        {hover && (
+        {hp && (
           <div
             className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded border border-[var(--color-border)] bg-[var(--color-background)] px-1.5 py-0.5 text-[10px] leading-tight shadow"
             style={{ left: `${tipLeftPct}%` }}
           >
-            <div className="text-[var(--color-muted-foreground)]">
-              {fmtPrecise(hover.pt.t, windowMs)}
-            </div>
+            <div className="text-[var(--color-muted-foreground)]">{fmtPrecise(hp.t, windowMs)}</div>
             <div className="font-medium" style={{ color }}>
-              {label}: {hover.pt.label ?? "—"}
+              Бүх систем: {hp.label ?? "—"}
             </div>
+            {series2 && (
+              <div style={{ color }}>Sentry: {hp2?.label ?? "—"}</div>
+            )}
           </div>
         )}
       </div>
-      {/* per-chart time axis labels */}
       <div className="mt-0.5 flex justify-between text-[10px] text-[var(--color-muted-foreground)]">
         {ticks.map((t, i) => (
           <span key={i}>{fmtTick(t, windowMs)}</span>
@@ -218,6 +243,10 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
     m.ram_used_mb != null && m.ram_total_mb ? (m.ram_used_mb / m.ram_total_mb) * 100 : null;
   const vramPct = (m: NodeMetric) =>
     m.vram_used_mb != null && m.vram_total_mb ? (m.vram_used_mb / m.vram_total_mb) * 100 : null;
+  const sRamPct = (m: NodeMetric) =>
+    m.sentry_ram_mb != null && m.ram_total_mb ? (m.sentry_ram_mb / m.ram_total_mb) * 100 : null;
+  const sVramPct = (m: NodeMetric) =>
+    m.sentry_vram_mb != null && m.vram_total_mb ? (m.sentry_vram_mb / m.vram_total_mb) * 100 : null;
   const gb = (mb: number | null | undefined) => (Number(mb) / 1024).toFixed(1);
 
   const rows = (data ?? [])
@@ -245,8 +274,8 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
       return { t: r.t, v, label: v == null ? null : fmtLabel(r.m, v) };
     });
 
-  // Five x-axis tick times evenly across the window (also used as vertical gridlines).
   const ticks = [0, 1, 2, 3, 4].map((i) => windowStart + (i / 4) * windowMs);
+  const hasSentry = rows.some((r) => r.m.sentry_cpu_pct != null || r.m.sentry_ram_mb != null);
 
   return (
     <div className="mt-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
@@ -265,7 +294,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
           </button>
         ))}
         <span className="ml-auto text-[10px] text-[var(--color-muted-foreground)]">
-          хөндлөн тэнхлэг: цаг хугацаа
+          {hasSentry ? "── бүх систем · ╌╌ Sentry · " : ""}х.тэнхлэг: цаг хугацаа
         </span>
       </div>
 
@@ -283,6 +312,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             label="CPU"
             color="#3b82f6"
             series={seriesOf((m) => m.cpu_pct, (_m, v) => `${v.toFixed(0)}%`)}
+            series2={seriesOf((m) => m.sentry_cpu_pct, (_m, v) => `${v.toFixed(0)}%`)}
             windowStart={windowStart}
             windowMs={windowMs}
             gapMs={gapMs}
@@ -303,6 +333,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             label="RAM"
             color="#f97316"
             series={seriesOf(ramPct, (m, v) => `${gb(m.ram_used_mb)}/${gb(m.ram_total_mb)} GB · ${v.toFixed(0)}%`)}
+            series2={seriesOf(sRamPct, (m, v) => `${gb(m.sentry_ram_mb)} GB · ${v.toFixed(0)}%`)}
             windowStart={windowStart}
             windowMs={windowMs}
             gapMs={gapMs}
@@ -313,6 +344,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             label="VRAM"
             color="#a855f7"
             series={seriesOf(vramPct, (m, v) => `${gb(m.vram_used_mb)}/${gb(m.vram_total_mb)} GB · ${v.toFixed(0)}%`)}
+            series2={seriesOf(sVramPct, (m, v) => `${gb(m.sentry_vram_mb)} GB · ${v.toFixed(0)}%`)}
             windowStart={windowStart}
             windowMs={windowMs}
             gapMs={gapMs}
