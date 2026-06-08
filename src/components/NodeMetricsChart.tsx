@@ -1,7 +1,12 @@
 /**
  * Resource time-series charts for one AI node (docs/19 Phase 1b). Fetches
  * /admin/ai-nodes/{id}/metrics?range= and draws lightweight inline-SVG
- * sparklines (CPU% / GPU% / RAM%) with a range switcher — no charting lib.
+ * sparklines (CPU% / GPU% / RAM% / VRAM%) with a range switcher — no charting lib.
+ *
+ * Points are positioned on the x-axis by their REAL timestamp inside the selected
+ * window [now-range, now], and the line is BROKEN across time gaps (offline
+ * periods). This stops a node that just came online from looking like it had
+ * uninterrupted coverage for the whole range — gaps now read as gaps.
  */
 import { useEffect, useState } from "react";
 
@@ -15,29 +20,62 @@ const RANGES = [
   { key: "30d", label: "30 хон" },
 ];
 
-/** A 0–100 sparkline: polyline + filled area, with the latest value labelled. */
+const HOUR = 3_600_000;
+const DAY = 86_400_000;
+const RANGE_MS: Record<string, number> = {
+  "1h": HOUR,
+  "6h": 6 * HOUR,
+  "24h": 24 * HOUR,
+  "7d": 7 * DAY,
+  "30d": 30 * DAY,
+};
+
+type Pt = { t: number; v: number | null };
+
+/**
+ * A 0–100 sparkline drawn on a TIME axis. `series` carries each sample's epoch-ms
+ * timestamp; points are placed by time within [windowStart, windowStart+windowMs]
+ * and the polyline is split into segments wherever there is a null sample or a
+ * time gap larger than `gapMs` (so offline stretches are not bridged).
+ */
 function Sparkline({
   label,
   color,
-  points,
+  series,
+  windowStart,
+  windowMs,
+  gapMs,
   latest,
 }: {
   label: string;
   color: string;
-  points: (number | null)[];
+  series: Pt[];
+  windowStart: number;
+  windowMs: number;
+  gapMs: number;
   latest: string;
 }) {
   const w = 240;
   const h = 40;
-  const vals = points.map((p) => (p == null ? 0 : Math.max(0, Math.min(100, p))));
-  const n = vals.length;
-  const coords = vals.map((v, i) => {
-    const x = n <= 1 ? 0 : (i / (n - 1)) * w;
-    const y = h - (v / 100) * h;
-    return `${x.toFixed(1)},${y.toFixed(1)}`;
-  });
-  const line = coords.join(" ");
-  const area = n ? `0,${h} ${line} ${w},${h}` : "";
+  const xOf = (t: number) =>
+    Math.max(0, Math.min(1, (t - windowStart) / windowMs)) * w;
+  const yOf = (v: number) => h - (Math.max(0, Math.min(100, v)) / 100) * h;
+
+  // Split into continuous segments: break on a null value or a too-large time gap.
+  const segments: { x: number; y: number }[][] = [];
+  let cur: { x: number; y: number }[] = [];
+  let prevT: number | null = null;
+  for (const p of series) {
+    const gap = prevT != null && p.t - prevT > gapMs;
+    if ((p.v == null || gap) && cur.length) {
+      segments.push(cur);
+      cur = [];
+    }
+    if (p.v != null) cur.push({ x: xOf(p.t), y: yOf(p.v) });
+    prevT = p.t;
+  }
+  if (cur.length) segments.push(cur);
+
   return (
     <div>
       <div className="mb-0.5 flex items-center justify-between text-xs">
@@ -47,12 +85,22 @@ function Sparkline({
         </span>
       </div>
       <svg width="100%" height={h} viewBox={`0 0 ${w} ${h}`} preserveAspectRatio="none">
-        {n > 0 && (
-          <>
-            <polyline points={area} fill={color} fillOpacity={0.12} stroke="none" />
-            <polyline points={line} fill="none" stroke={color} strokeWidth={1.5} />
-          </>
-        )}
+        {segments.map((seg, i) => {
+          if (seg.length === 1) {
+            // A lone sample with no neighbour to connect to — show a dot.
+            return (
+              <circle key={i} cx={seg[0].x} cy={seg[0].y} r={1.6} fill={color} />
+            );
+          }
+          const line = seg.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
+          const area = `${seg[0].x.toFixed(1)},${h} ${line} ${seg[seg.length - 1].x.toFixed(1)},${h}`;
+          return (
+            <g key={i}>
+              <polyline points={area} fill={color} fillOpacity={0.12} stroke="none" />
+              <polyline points={line} fill="none" stroke={color} strokeWidth={1.5} />
+            </g>
+          );
+        })}
       </svg>
     </div>
   );
@@ -76,12 +124,35 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
     };
   }, [nodeId, range]);
 
-  const last = data && data.length ? data[data.length - 1] : null;
   const ramPct = (m: NodeMetric) =>
     m.ram_used_mb != null && m.ram_total_mb ? (m.ram_used_mb / m.ram_total_mb) * 100 : null;
   const vramPct = (m: NodeMetric) =>
     m.vram_used_mb != null && m.vram_total_mb ? (m.vram_used_mb / m.vram_total_mb) * 100 : null;
   const gb = (mb: number | null | undefined) => (Number(mb) / 1024).toFixed(1);
+
+  // Sort by timestamp so segmentation + "latest" are correct regardless of order.
+  const rows = (data ?? [])
+    .map((m) => ({ m, t: Date.parse(m.ts) }))
+    .filter((r) => !Number.isNaN(r.t))
+    .sort((a, b) => a.t - b.t);
+  const last = rows.length ? rows[rows.length - 1].m : null;
+
+  // Time window: anchor the x-axis to [now - range, now] so recent-only data
+  // clusters at the right edge instead of being stretched across the whole width.
+  const windowMs = RANGE_MS[range] ?? DAY;
+  const now = Date.now();
+  const lastT = rows.length ? rows[rows.length - 1].t : now;
+  const windowEnd = Math.max(now, lastT);
+  const windowStart = windowEnd - windowMs;
+
+  // Gap threshold = 3× the typical sample cadence (median delta), min 2 minutes,
+  // so a few missed heartbeats (node offline) break the line instead of bridging.
+  const deltas = rows.slice(1).map((r, i) => r.t - rows[i].t).sort((a, b) => a - b);
+  const medianDelta = deltas.length ? deltas[Math.floor(deltas.length / 2)] : 60_000;
+  const gapMs = Math.max(medianDelta * 3, 120_000);
+
+  const seriesOf = (pick: (m: NodeMetric) => number | null): Pt[] =>
+    rows.map((r) => ({ t: r.t, v: pick(r.m) }));
 
   return (
     <div className="mt-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
@@ -105,7 +176,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
         <p className="text-xs text-[var(--color-danger)]">{error}</p>
       ) : data == null ? (
         <p className="text-xs text-[var(--color-muted-foreground)]">Ачааллаж байна…</p>
-      ) : data.length === 0 ? (
+      ) : rows.length === 0 ? (
         <p className="text-xs text-[var(--color-muted-foreground)]">
           Энэ хугацаанд өгөгдөл алга (heartbeat бүрт нэг цэг хадгална).
         </p>
@@ -114,25 +185,37 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
           <Sparkline
             label="CPU"
             color="#3b82f6"
-            points={data.map((m) => m.cpu_pct)}
+            series={seriesOf((m) => m.cpu_pct)}
+            windowStart={windowStart}
+            windowMs={windowMs}
+            gapMs={gapMs}
             latest={last?.cpu_pct != null ? `${last.cpu_pct.toFixed(0)}%` : "—"}
           />
           <Sparkline
             label="GPU"
             color="#22c55e"
-            points={data.map((m) => m.gpu_pct)}
+            series={seriesOf((m) => m.gpu_pct)}
+            windowStart={windowStart}
+            windowMs={windowMs}
+            gapMs={gapMs}
             latest={last?.gpu_pct != null ? `${last.gpu_pct}%` : "—"}
           />
           <Sparkline
             label="RAM"
             color="#f97316"
-            points={data.map(ramPct)}
+            series={seriesOf(ramPct)}
+            windowStart={windowStart}
+            windowMs={windowMs}
+            gapMs={gapMs}
             latest={last ? `${gb(last.ram_used_mb)}/${gb(last.ram_total_mb)} GB` : "—"}
           />
           <Sparkline
             label="VRAM"
             color="#a855f7"
-            points={data.map(vramPct)}
+            series={seriesOf(vramPct)}
+            windowStart={windowStart}
+            windowMs={windowMs}
+            gapMs={gapMs}
             latest={last ? `${gb(last.vram_used_mb)}/${gb(last.vram_total_mb)} GB` : "—"}
           />
         </div>
