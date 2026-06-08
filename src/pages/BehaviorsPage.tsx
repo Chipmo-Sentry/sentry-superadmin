@@ -14,28 +14,44 @@ import {
   ModalTitle,
   Spinner,
 } from "@chipmo-sentry/ui-kit";
-import { Brain, CheckCircle2, Clock, Plus, Save, Trash2 } from "lucide-react";
+import {
+  Brain,
+  CheckCircle2,
+  Clock,
+  ListOrdered,
+  Plus,
+  Save,
+  Trash2,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 import { Field } from "@/components/Field";
 import { behaviors } from "@/lib/api";
 import type { BehaviorConfig } from "@/lib/types";
 
-const COLOR_LABEL_FALLBACK = {
-  green: "Хэвийн",
-  yellow: "Анхаар",
-  red: "Сэжигтэй",
-};
+// v2 (ADR-0024): criteria grouped by severity level; absolute 0-100 score with
+// 4 risk levels. Defaults match backend DEFAULT_THRESHOLDS.
+const DEF_GREEN = 10;
+const DEF_YELLOW = 25;
+const DEF_HIGH = 50;
+
+const LEVELS: { n: number; title: string }[] = [
+  { n: 1, title: "Түвшин 1 — Сэжигтэй зан" },
+  { n: 2, title: "Түвшин 2 — Нуун далдлах" },
+  { n: 3, title: "Түвшин 3 — Зохион байгуулалттай" },
+  { n: 4, title: "Түвшин 4 — Ноцтой үйлдэл" },
+];
 
 /** Super-admin-only editor for the GLOBAL behavior config (weights +
- * thresholds). The backend PATCH /behaviors is super-admin gated. */
+ * 4-level thresholds). The backend PATCH /behaviors is super-admin gated. */
 export function BehaviorsPage() {
   const [data, setData] = useState<BehaviorConfig | null>(null);
   const [err, setErr] = useState<string | null>(null);
 
   const [weights, setWeights] = useState<Record<string, number>>({});
-  const [greenMax, setGreenMax] = useState<number>(5);
-  const [yellowMax, setYellowMax] = useState<number>(15);
+  const [greenMax, setGreenMax] = useState<number>(DEF_GREEN);
+  const [yellowMax, setYellowMax] = useState<number>(DEF_YELLOW);
+  const [highMax, setHighMax] = useState<number>(DEF_HIGH);
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -44,8 +60,9 @@ export function BehaviorsPage() {
   function hydrate(j: BehaviorConfig) {
     setData(j);
     setWeights(Object.fromEntries(j.dimensions.map((d) => [d.key, d.weight])));
-    setGreenMax(j.thresholds.green_max ?? 5);
-    setYellowMax(j.thresholds.yellow_max ?? 15);
+    setGreenMax(j.thresholds.green_max ?? DEF_GREEN);
+    setYellowMax(j.thresholds.yellow_max ?? DEF_YELLOW);
+    setHighMax(j.thresholds.high_max ?? DEF_HIGH);
   }
 
   useEffect(() => {
@@ -65,11 +82,13 @@ export function BehaviorsPage() {
 
   const dirty = data
     ? data.dimensions.some((d) => weights[d.key] !== d.weight) ||
-      greenMax !== (data.thresholds.green_max ?? 5) ||
-      yellowMax !== (data.thresholds.yellow_max ?? 15)
+      greenMax !== (data.thresholds.green_max ?? DEF_GREEN) ||
+      yellowMax !== (data.thresholds.yellow_max ?? DEF_YELLOW) ||
+      highMax !== (data.thresholds.high_max ?? DEF_HIGH)
     : false;
 
-  const thresholdValid = greenMax >= 0 && yellowMax > greenMax;
+  const thresholdValid =
+    greenMax >= 0 && yellowMax > greenMax && highMax > yellowMax;
 
   async function save() {
     if (!dirty || !thresholdValid) return;
@@ -78,7 +97,11 @@ export function BehaviorsPage() {
     try {
       const fresh = await behaviors.patch({
         weights,
-        thresholds: { green_max: greenMax, yellow_max: yellowMax },
+        thresholds: {
+          green_max: greenMax,
+          yellow_max: yellowMax,
+          high_max: highMax,
+        },
       });
       hydrate(fresh);
       setSavedAt(new Date().toLocaleTimeString("mn-MN"));
@@ -123,7 +146,13 @@ export function BehaviorsPage() {
     );
   }
 
-  const activeCount = data.dimensions.filter((d) => d.active_in_m1).length;
+  const detectorCount = data.dimensions.filter((d) => d.has_detector).length;
+  const ll = data.level_labels ?? {
+    LOW: "Бага",
+    MEDIUM: "Дунд",
+    HIGH: "Өндөр",
+    CRITICAL: "Ноцтой",
+  };
 
   return (
     <div className="p-8">
@@ -131,11 +160,12 @@ export function BehaviorsPage() {
         <div>
           <div className="mb-2 flex items-center gap-2">
             <Brain className="h-6 w-6 text-[var(--color-primary)]" />
-            <h1 className="text-2xl font-semibold">Сэжиг шалгуурууд</h1>
+            <h1 className="text-2xl font-semibold">Зан үйлийн engine v2</h1>
           </div>
           <p className="text-sm text-[var(--color-muted-foreground)]">
-            Глобал тохиргоо. AI {activeCount} / {data.dimensions.length}{" "}
-            хэмжээсээр оноо тооцон өнгөт бүсэд хуваана. Жин ↑ = илүү мэдрэмжтэй.
+            Глобал тохиргоо. AI {detectorCount} / {data.dimensions.length}{" "}
+            детектортой шалгуураар 0–100 эрсдэлийн оноо тооцож, дараалал илрэхэд
+            нэмэлт оноо өгнө. Жин ↑ = илүү мэдрэмжтэй.
           </p>
         </div>
         <div className="flex items-center gap-2">
@@ -159,148 +189,200 @@ export function BehaviorsPage() {
         </div>
       </div>
 
-      {err && (
-        <p className="mb-4 text-sm text-[var(--color-danger)]">{err}</p>
-      )}
+      {err && <p className="mb-4 text-sm text-[var(--color-danger)]">{err}</p>}
 
-      {/* Thresholds */}
+      {/* 4-level thresholds (absolute 0-100) */}
       <Card className="mb-6">
         <CardHeader>
-          <CardTitle className="text-base">Risk түвшний босго (оноо)</CardTitle>
+          <CardTitle className="text-base">
+            Эрсдэлийн түвшний босго (0–100)
+          </CardTitle>
           <CardDescription>
-            Хүний нийт оноо энэ босгуудаас хамаарч өнгө сонгогдоно.
+            Хүний нийт оноо энэ босгуудаар 4 түвшинд хуваагдана.
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 sm:grid-cols-3">
-            <ThresholdInput
+          <div className="grid gap-4 sm:grid-cols-4">
+            <LevelInput
               color="bg-green-500"
-              label={data.color_labels?.green ?? COLOR_LABEL_FALLBACK.green}
+              label={ll.LOW ?? "Бага"}
               hint={`оноо < ${greenMax}`}
               value={greenMax}
               onChange={setGreenMax}
             />
-            <ThresholdInput
+            <LevelInput
               color="bg-yellow-500"
-              label={data.color_labels?.yellow ?? COLOR_LABEL_FALLBACK.yellow}
+              label={ll.MEDIUM ?? "Дунд"}
               hint={`${greenMax} ≤ оноо < ${yellowMax}`}
               value={yellowMax}
               onChange={setYellowMax}
             />
+            <LevelInput
+              color="bg-orange-500"
+              label={ll.HIGH ?? "Өндөр"}
+              hint={`${yellowMax} ≤ оноо < ${highMax}`}
+              value={highMax}
+              onChange={setHighMax}
+            />
             <div className="rounded-md border border-[var(--color-border)] p-3">
               <div className="mb-1 flex items-center gap-2">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-500" />
+                <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
                 <span className="text-sm font-medium">
-                  {data.color_labels?.red ?? COLOR_LABEL_FALLBACK.red}
+                  {ll.CRITICAL ?? "Ноцтой"}
                 </span>
               </div>
               <p className="text-xs text-[var(--color-muted-foreground)]">
-                оноо ≥ {yellowMax} → автомат clip + alert
+                оноо ≥ {highMax} → автомат clip + VLM шалгалт + alert
               </p>
             </div>
           </div>
           {!thresholdValid && (
             <p className="mt-3 text-xs text-[var(--color-danger)]">
-              "Анхаар"-ын босго "Хэвийн"-ийн босгоноос их байх ёстой.
+              Босгууд өсөх дарааллаар байх ёстой: Бага &lt; Дунд &lt; Өндөр.
             </p>
           )}
         </CardContent>
       </Card>
 
-      {/* Criteria catalog */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-base">Шалгуурууд</CardTitle>
-          <CardDescription>
-            Детектортой шалгуур л оноо нэмнэ. Захиалгат шалгуур (детектор
-            хүлээгдэж) нь sentry-ai-д код гартал идэвхгүй. Унтраасан шалгуур
-            оноо нэмэхгүй.
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="px-0 pt-0">
-          <table className="w-full text-sm">
-            <thead className="border-y border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
-              <tr>
-                <th className="px-3 py-2 text-left font-medium">Шалгуур</th>
-                <th className="px-3 py-2 text-left font-medium">Тайлбар</th>
-                <th className="px-3 py-2 text-center font-medium">Детектор</th>
-                <th className="px-3 py-2 text-center font-medium">Идэвх</th>
-                <th className="px-3 py-2 text-right font-medium">Жин</th>
-                <th className="px-3 py-2"></th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.dimensions.map((d) => (
-                <tr
-                  key={d.key}
-                  className={`border-b border-[var(--color-border)] ${
-                    !d.active ? "opacity-60" : ""
-                  }`}
+      {/* Criteria grouped by level */}
+      {LEVELS.map((lvl) => {
+        const dims = data.dimensions.filter((d) => (d.level ?? 1) === lvl.n);
+        if (dims.length === 0) return null;
+        return (
+          <Card key={lvl.n} className="mb-4">
+            <CardHeader>
+              <CardTitle className="text-base">{lvl.title}</CardTitle>
+            </CardHeader>
+            <CardContent className="px-0 pt-0">
+              <table className="w-full text-sm">
+                <thead className="border-y border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Шалгуур</th>
+                    <th className="px-3 py-2 text-left font-medium">Тайлбар</th>
+                    <th className="px-3 py-2 text-center font-medium">Детектор</th>
+                    <th className="px-3 py-2 text-center font-medium">Идэвх</th>
+                    <th className="px-3 py-2 text-right font-medium">Жин</th>
+                    <th className="px-3 py-2"></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {dims.map((d) => (
+                    <tr
+                      key={d.key}
+                      className={`border-b border-[var(--color-border)] ${
+                        !d.active ? "opacity-60" : ""
+                      }`}
+                    >
+                      <td className="px-3 py-3 align-top">
+                        <div className="font-medium">{d.label_mn}</div>
+                        <code className="mt-0.5 inline-block rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs">
+                          {d.key}
+                        </code>
+                      </td>
+                      <td className="max-w-md px-3 py-3 align-top text-xs text-[var(--color-muted-foreground)]">
+                        {d.description_mn}
+                      </td>
+                      <td className="px-3 py-3 align-top text-center">
+                        {d.has_detector ? (
+                          <Badge tone="success">
+                            <CheckCircle2 className="h-3 w-3" /> Детектортой
+                          </Badge>
+                        ) : (
+                          <Badge tone="warning">
+                            <Clock className="h-3 w-3" /> Хүлээгдэж
+                          </Badge>
+                        )}
+                      </td>
+                      <td className="px-3 py-3 align-top text-center">
+                        <input
+                          type="checkbox"
+                          checked={d.active}
+                          disabled={busyKey === d.key}
+                          onChange={(e) =>
+                            void toggleActive(d.key, e.target.checked)
+                          }
+                          className="h-4 w-4"
+                          aria-label="Идэвхжүүлэх"
+                        />
+                      </td>
+                      <td className="px-3 py-3 align-top text-right">
+                        <input
+                          type="number"
+                          step="0.5"
+                          min="0"
+                          value={weights[d.key] ?? d.weight}
+                          onChange={(e) =>
+                            setWeights((prev) => ({
+                              ...prev,
+                              [d.key]: Number(e.target.value) || 0,
+                            }))
+                          }
+                          className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+                        />
+                      </td>
+                      <td className="px-3 py-3 align-top text-center">
+                        {!d.builtin && (
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            aria-label="Устгах"
+                            disabled={busyKey === d.key}
+                            onClick={() => void removeDim(d.key)}
+                          >
+                            <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                          </Button>
+                        )}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        );
+      })}
+
+      {/* Sequence rules (read-only) */}
+      {data.sequences && data.sequences.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-base">
+              <ListOrdered className="h-4 w-4" />
+              Дарааллын дүрэм (нэмэлт оноо)
+            </CardTitle>
+            <CardDescription>
+              Зан үйлүүд эдгээр дарааллаар илрэхэд нэмэлт оноо нэмэгдэнэ.
+              Дараалал нь ганц детекторын оноогоос давуу эрхтэй.
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ul className="space-y-2">
+              {data.sequences.map((s) => (
+                <li
+                  key={s.key}
+                  className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-border)] px-3 py-2"
                 >
-                  <td className="px-3 py-3 align-top">
-                    <div className="font-medium">{d.label_mn}</div>
-                    <code className="mt-0.5 inline-block rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs">
-                      {d.key}
-                    </code>
-                  </td>
-                  <td className="max-w-md px-3 py-3 align-top text-xs text-[var(--color-muted-foreground)]">
-                    {d.description_mn}
-                  </td>
-                  <td className="px-3 py-3 align-top text-center">
-                    {d.builtin ? (
-                      <Badge tone="success">
-                        <CheckCircle2 className="h-3 w-3" /> Детектортой
-                      </Badge>
-                    ) : (
-                      <Badge tone="warning">
-                        <Clock className="h-3 w-3" /> Хүлээгдэж
-                      </Badge>
-                    )}
-                  </td>
-                  <td className="px-3 py-3 align-top text-center">
-                    <input
-                      type="checkbox"
-                      checked={d.active}
-                      disabled={busyKey === d.key}
-                      onChange={(e) => void toggleActive(d.key, e.target.checked)}
-                      className="h-4 w-4"
-                      aria-label="Идэвхжүүлэх"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top text-right">
-                    <input
-                      type="number"
-                      step="0.5"
-                      min="0"
-                      value={weights[d.key] ?? d.weight}
-                      onChange={(e) =>
-                        setWeights((prev) => ({
-                          ...prev,
-                          [d.key]: Number(e.target.value) || 0,
-                        }))
-                      }
-                      className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
-                    />
-                  </td>
-                  <td className="px-3 py-3 align-top text-center">
-                    {!d.builtin && (
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        aria-label="Устгах"
-                        disabled={busyKey === d.key}
-                        onClick={() => void removeDim(d.key)}
-                      >
-                        <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
-                      </Button>
-                    )}
-                  </td>
-                </tr>
+                  <span className="flex flex-wrap items-center gap-1.5 text-sm">
+                    {s.pattern.map((p, i) => (
+                      <span key={i} className="flex items-center gap-1.5">
+                        {i > 0 && (
+                          <span className="text-[var(--color-muted-foreground)]">
+                            →
+                          </span>
+                        )}
+                        <code className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs">
+                          {p}
+                        </code>
+                      </span>
+                    ))}
+                  </span>
+                  <Badge tone="success">+{s.bonus}</Badge>
+                </li>
               ))}
-            </tbody>
-          </table>
-        </CardContent>
-      </Card>
+            </ul>
+          </CardContent>
+        </Card>
+      )}
 
       <p className="mt-6 text-xs text-[var(--color-muted-foreground)]">
         Хадгалсны дараа sentry-ai ~30 секунд дотор шинэ утгуудыг хүлээн авна.
@@ -319,6 +401,13 @@ export function BehaviorsPage() {
   );
 }
 
+const CATEGORIES: { value: string; label: string; level: number }[] = [
+  { value: "suspicious", label: "Сэжигтэй (Түвшин 1)", level: 1 },
+  { value: "concealment", label: "Нуун далдлах (Түвшин 2)", level: 2 },
+  { value: "organized", label: "Зохион байгуулалттай (Түвшин 3)", level: 3 },
+  { value: "critical", label: "Ноцтой (Түвшин 4)", level: 4 },
+];
+
 function AddCriterionModal({
   open,
   onClose,
@@ -334,6 +423,7 @@ function AddCriterionModal({
   const [label, setLabel] = useState("");
   const [description, setDescription] = useState("");
   const [weight, setWeight] = useState(1);
+  const [category, setCategory] = useState("suspicious");
   const [saving, setSaving] = useState(false);
 
   useEffect(() => {
@@ -342,6 +432,7 @@ function AddCriterionModal({
     setLabel("");
     setDescription("");
     setWeight(1);
+    setCategory("suspicious");
   }, [open]);
 
   const keyValid = /^[a-z][a-z0-9_]{1,39}$/.test(key);
@@ -351,11 +442,14 @@ function AddCriterionModal({
     if (!keyValid || !label.trim()) return;
     setSaving(true);
     try {
+      const cat = CATEGORIES.find((c) => c.value === category);
       const fresh = await behaviors.addDimension({
         key,
         label_mn: label.trim(),
         description_mn: description.trim(),
         weight,
+        category,
+        level: cat?.level ?? 1,
       });
       onSaved(fresh);
     } catch (err) {
@@ -373,11 +467,15 @@ function AddCriterionModal({
         </ModalHeader>
         <form className="space-y-4" onSubmit={onSubmit}>
           <p className="rounded-md bg-[var(--color-muted)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
-            Анхаар: AI энэ шалгуурыг бодитоор илрүүлэхийн тулд sentry-ai-д
-            тухайн түлхүүрийн <strong>детектор код</strong> нэмэгдсэн байх ёстой.
-            Тэр болтол шалгуур бүртгэгдэх ч оноо нэмэхгүй.
+            Анхаар: AI энэ шалгуурыг бодитоор илрүүлэхийн тулд sentry-ai-д тухайн
+            түлхүүрийн <strong>детектор код</strong> нэмэгдсэн байх ёстой. Тэр
+            болтол шалгуур бүртгэгдэх ч оноо нэмэхгүй.
           </p>
-          <Field label="Түлхүүр (key)" required hint="латин жижиг үсэг/тоо/_; үсгээр эхэлнэ">
+          <Field
+            label="Түлхүүр (key)"
+            required
+            hint="латин жижиг үсэг/тоо/_; үсгээр эхэлнэ"
+          >
             <Input
               value={key}
               onChange={(e) => setKey(e.target.value)}
@@ -399,6 +497,20 @@ function AddCriterionModal({
               disabled={saving}
             />
           </Field>
+          <Field label="Ангилал / түвшин">
+            <select
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              disabled={saving}
+              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+            >
+              {CATEGORIES.map((c) => (
+                <option key={c.value} value={c.value}>
+                  {c.label}
+                </option>
+              ))}
+            </select>
+          </Field>
           <Field label="Тайлбар">
             <Input
               value={description}
@@ -418,7 +530,12 @@ function AddCriterionModal({
             />
           </Field>
           <ModalFooter>
-            <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
+            <Button
+              type="button"
+              variant="ghost"
+              onClick={onClose}
+              disabled={saving}
+            >
               Болих
             </Button>
             <Button type="submit" disabled={saving || !keyValid || !label.trim()}>
@@ -431,7 +548,7 @@ function AddCriterionModal({
   );
 }
 
-function ThresholdInput({
+function LevelInput({
   color,
   label,
   hint,

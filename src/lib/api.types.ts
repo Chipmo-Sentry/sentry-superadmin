@@ -1330,6 +1330,11 @@ export interface components {
                 [key: string]: number;
             };
             /**
+             * Sequences
+             * @default []
+             */
+            sequences: components["schemas"]["SequenceInfo"][];
+            /**
              * Color Labels
              * @default {
              *       "green": "Хэвийн",
@@ -1338,6 +1343,18 @@ export interface components {
              *     }
              */
             color_labels: {
+                [key: string]: string;
+            };
+            /**
+             * Level Labels
+             * @default {
+             *       "LOW": "Бага",
+             *       "MEDIUM": "Дунд",
+             *       "HIGH": "Өндөр",
+             *       "CRITICAL": "Ноцтой"
+             *     }
+             */
+            level_labels: {
                 [key: string]: string;
             };
         };
@@ -1367,6 +1384,21 @@ export interface components {
             weight: number;
             /** Active */
             active: boolean;
+            /**
+             * Category
+             * @default suspicious
+             */
+            category: string;
+            /**
+             * Level
+             * @default 1
+             */
+            level: number;
+            /**
+             * Has Detector
+             * @default true
+             */
+            has_detector: boolean;
             /** Active In M1 */
             active_in_m1: boolean;
             /** Builtin */
@@ -1540,6 +1572,16 @@ export interface components {
              * @default 1
              */
             weight: number;
+            /**
+             * Category
+             * @default suspicious
+             */
+            category: string;
+            /**
+             * Level
+             * @default 1
+             */
+            level: number;
         };
         /** DimensionUpdate */
         DimensionUpdate: {
@@ -1551,6 +1593,10 @@ export interface components {
             weight?: number | null;
             /** Active */
             active?: boolean | null;
+            /** Category */
+            category?: string | null;
+            /** Level */
+            level?: number | null;
         };
         /** FeedbackCreate */
         FeedbackCreate: {
@@ -1893,6 +1939,15 @@ export interface components {
              * @default 3
              */
             k: number;
+        };
+        /** SequenceInfo */
+        SequenceInfo: {
+            /** Key */
+            key: string;
+            /** Pattern */
+            pattern: string[];
+            /** Bonus */
+            bonus: number;
         };
         /** StoreCreate */
         StoreCreate: {

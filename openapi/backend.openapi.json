@@ -4752,7 +4752,7 @@
           "risk_threshold": {
             "type": "number",
             "title": "Risk Threshold",
-            "default": 70
+            "default": 70.0
           }
         },
         "type": "object",
@@ -5382,8 +5382,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 30,
-                "minimum": 0
+                "maximum": 30.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5418,8 +5418,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "reasoning": {
@@ -5436,7 +5436,7 @@
           },
           "inference_latency_ms": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Inference Latency Ms"
           }
         },
@@ -5598,6 +5598,14 @@
             "type": "object",
             "title": "Thresholds"
           },
+          "sequences": {
+            "items": {
+              "$ref": "#/components/schemas/SequenceInfo"
+            },
+            "type": "array",
+            "title": "Sequences",
+            "default": []
+          },
           "color_labels": {
             "additionalProperties": {
               "type": "string"
@@ -5608,6 +5616,19 @@
               "green": "Хэвийн",
               "yellow": "Анхаар",
               "red": "Сэжигтэй"
+            }
+          },
+          "level_labels": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Level Labels",
+            "default": {
+              "LOW": "Бага",
+              "MEDIUM": "Дунд",
+              "HIGH": "Өндөр",
+              "CRITICAL": "Ноцтой"
             }
           }
         },
@@ -5675,6 +5696,21 @@
             "type": "boolean",
             "title": "Active"
           },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "suspicious"
+          },
+          "level": {
+            "type": "integer",
+            "title": "Level",
+            "default": 1
+          },
+          "has_detector": {
+            "type": "boolean",
+            "title": "Has Detector",
+            "default": true
+          },
           "active_in_m1": {
             "type": "boolean",
             "title": "Active In M1"
@@ -5735,7 +5771,7 @@
           "duration_sec": {
             "type": "number",
             "title": "Duration Sec",
-            "default": 0
+            "default": 0.0
           }
         },
         "type": "object",
@@ -5784,8 +5820,8 @@
           },
           "stage2_threshold": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Stage2 Threshold",
             "default": 0.5
           },
@@ -5808,9 +5844,9 @@
           },
           "risk_threshold": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Risk Threshold",
-            "default": 70
+            "default": 70.0
           }
         },
         "type": "object",
@@ -5879,7 +5915,7 @@
           "risk_threshold": {
             "type": "number",
             "title": "Risk Threshold",
-            "default": 70
+            "default": 70.0
           }
         },
         "type": "object",
@@ -5939,8 +5975,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1,
-                "minimum": 0
+                "maximum": 1.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5975,7 +6011,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -6088,8 +6124,20 @@
           },
           "weight": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Weight",
+            "default": 1.0
+          },
+          "category": {
+            "type": "string",
+            "title": "Category",
+            "default": "suspicious"
+          },
+          "level": {
+            "type": "integer",
+            "maximum": 4.0,
+            "minimum": 1.0,
+            "title": "Level",
             "default": 1
           }
         },
@@ -6131,7 +6179,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -6149,6 +6197,30 @@
               }
             ],
             "title": "Active"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "level": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 4.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Level"
           }
         },
         "type": "object",
@@ -6313,8 +6385,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000,
-                "minimum": 0
+                "maximum": 100000.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -6524,7 +6596,7 @@
           "fps_inference": {
             "type": "number",
             "title": "Fps Inference",
-            "default": 0
+            "default": 0.0
           },
           "tracks": {
             "items": {
@@ -6589,13 +6661,13 @@
           "det_confidence": {
             "type": "number",
             "title": "Det Confidence",
-            "default": 0
+            "default": 0.0
           },
           "risk_pct": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Risk Pct",
-            "default": 0
+            "default": 0.0
           },
           "color": {
             "type": "string",
@@ -6901,8 +6973,8 @@
           },
           "k": {
             "type": "integer",
-            "maximum": 10,
-            "minimum": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
             "title": "K",
             "default": 3
           }
@@ -6913,6 +6985,32 @@
         ],
         "title": "RagSimilarRequest",
         "description": "Ask for the most similar past verified cases."
+      },
+      "SequenceInfo": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "pattern": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Pattern"
+          },
+          "bonus": {
+            "type": "number",
+            "title": "Bonus"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "pattern",
+          "bonus"
+        ],
+        "title": "SequenceInfo"
       },
       "StoreCreate": {
         "properties": {
