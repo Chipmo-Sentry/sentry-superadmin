@@ -93,6 +93,7 @@ function Chart({
   gapMs,
   ticks,
   latest,
+  note,
 }: {
   label: string;
   color: string;
@@ -103,6 +104,7 @@ function Chart({
   gapMs: number;
   ticks: number[];
   latest: string;
+  note?: string;
 }) {
   const xOf = (t: number) => Math.max(0, Math.min(1, (t - windowStart) / windowMs)) * W;
   const yOf = (v: number) => H - (Math.max(0, Math.min(100, v)) / 100) * H;
@@ -217,6 +219,9 @@ function Chart({
           <span key={i}>{fmtTick(t, windowMs)}</span>
         ))}
       </div>
+      {note && (
+        <p className="mt-0.5 text-[10px] italic text-[var(--color-muted-foreground)]">{note}</p>
+      )}
     </div>
   );
 }
@@ -278,7 +283,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
   const hasSentry = rows.some((r) => r.m.sentry_cpu_pct != null || r.m.sentry_ram_mb != null);
 
   return (
-    <div className="mt-3 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+    <div className="mt-3 min-w-0 overflow-x-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
       <div className="mb-3 flex flex-wrap items-center gap-1">
         {RANGES.map((r) => (
           <button
@@ -328,6 +333,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             gapMs={gapMs}
             ticks={ticks}
             latest={last?.gpu_pct != null ? `${last.gpu_pct}%` : "—"}
+            note="Бүх систем. Process тус бүрийн GPU ачаалал (%) NVML-д байхгүй — Sentry-ий GPU санах ойг VRAM графикаас хар."
           />
           <Chart
             label="RAM"

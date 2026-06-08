@@ -31,7 +31,10 @@ import { admin } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
 const PROVIDERS = ["minicpm-v-2.6", "qwen2.5-vl-7b"];
-const ONLINE_WINDOW_MS = 2 * 60 * 1000;
+// 5 min: the heartbeat thread shares the GIL with the GPU live-workers, so a beat
+// can be delayed a minute or two under load. A 5-min window stops the node from
+// flapping online↔offline between beats while still flagging a truly dead node.
+const ONLINE_WINDOW_MS = 5 * 60 * 1000;
 
 /** Latest published AI server installer (GitHub Releases). `latest/download`
  * always resolves to the newest release asset, so this never needs bumping. */
@@ -68,6 +71,23 @@ function telemetrySummary(raw: string | null): string {
     return parts.length ? parts.join(" · ") : "—";
   } catch {
     return "—";
+  }
+}
+
+/** Just THIS project's (Sentry-AI process tree) resource footprint, isolated from
+ * the whole machine. Per-process GPU *utilization* isn't exposed by NVML, so only
+ * CPU / RAM / VRAM are available — GPU memory (VRAM) is Sentry's GPU footprint. */
+function sentryTelemetrySummary(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as Record<string, unknown>;
+    const parts: string[] = [];
+    if (t.sentry_cpu_pct != null) parts.push(`CPU ${Number(t.sentry_cpu_pct).toFixed(0)}%`);
+    if (t.sentry_ram_mb != null) parts.push(`RAM ${gb(t.sentry_ram_mb)} GB`);
+    if (t.sentry_vram_mb != null) parts.push(`VRAM ${gb(t.sentry_vram_mb)} GB`);
+    return parts.length ? parts.join(" · ") : null;
+  } catch {
+    return null;
   }
 }
 
@@ -229,10 +249,17 @@ export function AiNodesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{n.version || "—"}</TableCell>
-                    <TableCell className="text-sm">
-                      <span className="text-[var(--color-muted-foreground)]">
+                    <TableCell className="max-w-md whitespace-normal break-words text-sm">
+                      <div className="text-[var(--color-muted-foreground)]">
+                        <span className="text-[10px] uppercase opacity-60">Бүх систем </span>
                         {telemetrySummary(n.telemetry)}
-                      </span>
+                      </div>
+                      {sentryTelemetrySummary(n.telemetry) && (
+                        <div className="text-[var(--color-foreground)]">
+                          <span className="text-[10px] uppercase opacity-60">Sentry </span>
+                          {sentryTelemetrySummary(n.telemetry)}
+                        </div>
+                      )}
                       <HealthDots health={parseHealth(n.telemetry)} />
                     </TableCell>
                     <TableCell className="text-sm">
@@ -270,7 +297,7 @@ export function AiNodesPage() {
                   </TableRow>
                   {expanded === n.id && (
                     <TableRow>
-                      <TableCell colSpan={7}>
+                      <TableCell colSpan={6}>
                         <NodeMetricsChart nodeId={n.id} />
                       </TableCell>
                     </TableRow>
