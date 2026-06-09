@@ -765,6 +765,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/org/invitations/{invitation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Cancel Invitation
+         * @description Revoke a pending invite. The token immediately stops working.
+         */
+        delete: operations["cancel_invitation_api_v1_org_invitations__invitation_id__delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/org/members/{user_id}": {
         parameters: {
             query?: never;
@@ -779,7 +799,12 @@ export interface paths {
         delete: operations["remove_member_api_v1_org_members__user_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Update Member
+         * @description Lock (is_active=false) or unlock a member. Locking blocks their login
+         *     immediately without deleting the account. Can't lock yourself or the owner.
+         */
+        patch: operations["update_member_api_v1_org_members__user_id__patch"];
         trace?: never;
     };
     "/api/v1/org/accept-invite": {
@@ -1016,7 +1041,7 @@ export interface paths {
         head?: never;
         /**
          * Patch Behavior Config
-         * @description Bulk weights (existing keys) + thresholds. Super-admin only.
+         * @description Bulk weights (existing keys) + thresholds + engine knobs. Super-admin only.
          */
         patch: operations["patch_behavior_config_api_v1_behaviors_patch"];
         trace?: never;
@@ -1427,6 +1452,13 @@ export interface components {
                 [key: string]: number;
             };
             /**
+             * Engine
+             * @default {}
+             */
+            engine: {
+                [key: string]: number;
+            };
+            /**
              * Sequences
              * @default []
              */
@@ -1457,7 +1489,7 @@ export interface components {
         };
         /**
          * BehaviorConfigPatch
-         * @description Back-compat bulk update — weights (existing keys only) and/or thresholds.
+         * @description Bulk update — weights (existing keys only), thresholds, and/or engine knobs.
          */
         BehaviorConfigPatch: {
             /** Weights */
@@ -1466,6 +1498,10 @@ export interface components {
             } | null;
             /** Thresholds */
             thresholds?: {
+                [key: string]: number;
+            } | null;
+            /** Engine */
+            engine?: {
                 [key: string]: number;
             } | null;
         };
@@ -1500,6 +1536,13 @@ export interface components {
             active_in_m1: boolean;
             /** Builtin */
             builtin: boolean;
+            /**
+             * Params
+             * @default {}
+             */
+            params: {
+                [key: string]: number;
+            };
         };
         /** Body_upload_clip_api_v1_clips_post */
         Body_upload_clip_api_v1_clips_post: {
@@ -1694,6 +1737,10 @@ export interface components {
             category?: string | null;
             /** Level */
             level?: number | null;
+            /** Params */
+            params?: {
+                [key: string]: number;
+            } | null;
         };
         /** FeedbackCreate */
         FeedbackCreate: {
@@ -1976,6 +2023,14 @@ export interface components {
              * @default
              */
             query: string;
+        };
+        /**
+         * MemberUpdate
+         * @description Org admin toggles a member's access (lock = is_active False).
+         */
+        MemberUpdate: {
+            /** Is Active */
+            is_active: boolean;
         };
         /**
          * OrgMemberPublic
@@ -3997,6 +4052,40 @@ export interface operations {
             };
         };
     };
+    cancel_invitation_api_v1_org_invitations__invitation_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                invitation_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     remove_member_api_v1_org_members__user_id__delete: {
         parameters: {
             query?: never;
@@ -4019,6 +4108,46 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_member_api_v1_org_members__user_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path: {
+                user_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["MemberUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["OrgMemberPublic"];
+                };
             };
             /** @description Validation Error */
             422: {

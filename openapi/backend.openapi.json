@@ -3935,6 +3935,91 @@
         }
       }
     },
+    "/api/v1/org/invitations/{invitation_id}": {
+      "delete": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Cancel Invitation",
+        "description": "Revoke a pending invite. The token immediately stops working.",
+        "operationId": "cancel_invitation_api_v1_org_invitations__invitation_id__delete",
+        "parameters": [
+          {
+            "name": "invitation_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Invitation Id"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/members/{user_id}": {
       "delete": {
         "tags": [
@@ -4005,6 +4090,106 @@
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "patch": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Update Member",
+        "description": "Lock (is_active=false) or unlock a member. Locking blocks their login\nimmediately without deleting the account. Can't lock yourself or the owner.",
+        "operationId": "update_member_api_v1_org_members__user_id__patch",
+        "parameters": [
+          {
+            "name": "user_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "User Id"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MemberUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/OrgMemberPublic"
+                }
+              }
+            }
           },
           "422": {
             "description": "Validation Error",
@@ -4753,7 +4938,7 @@
           "behaviors"
         ],
         "summary": "Patch Behavior Config",
-        "description": "Bulk weights (existing keys) + thresholds. Super-admin only.",
+        "description": "Bulk weights (existing keys) + thresholds + engine knobs. Super-admin only.",
         "operationId": "patch_behavior_config_api_v1_behaviors_patch",
         "parameters": [
           {
@@ -6052,6 +6237,14 @@
             "type": "object",
             "title": "Thresholds"
           },
+          "engine": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Engine",
+            "default": {}
+          },
           "sequences": {
             "items": {
               "$ref": "#/components/schemas/SequenceInfo"
@@ -6122,11 +6315,25 @@
               }
             ],
             "title": "Thresholds"
+          },
+          "engine": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Engine"
           }
         },
         "type": "object",
         "title": "BehaviorConfigPatch",
-        "description": "Back-compat bulk update — weights (existing keys only) and/or thresholds."
+        "description": "Bulk update — weights (existing keys only), thresholds, and/or engine knobs."
       },
       "BehaviorDimension": {
         "properties": {
@@ -6172,6 +6379,14 @@
           "builtin": {
             "type": "boolean",
             "title": "Builtin"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Params",
+            "default": {}
           }
         },
         "type": "object",
@@ -6675,6 +6890,20 @@
               }
             ],
             "title": "Level"
+          },
+          "params": {
+            "anyOf": [
+              {
+                "additionalProperties": {
+                  "type": "number"
+                },
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Params"
           }
         },
         "type": "object",
@@ -7265,6 +7494,20 @@
         "type": "object",
         "title": "MediaMtxAuthRequest",
         "description": "MediaMTX authHTTP payload (subset we use). MediaMTX POSTs this on every\npublish/read/playback/api action when `authMethod: http`."
+      },
+      "MemberUpdate": {
+        "properties": {
+          "is_active": {
+            "type": "boolean",
+            "title": "Is Active"
+          }
+        },
+        "type": "object",
+        "required": [
+          "is_active"
+        ],
+        "title": "MemberUpdate",
+        "description": "Org admin toggles a member's access (lock = is_active False)."
       },
       "OrgMemberPublic": {
         "properties": {

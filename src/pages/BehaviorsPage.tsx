@@ -23,7 +23,7 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { useEffect, useState } from "react";
+import { Fragment, useEffect, useState } from "react";
 
 import { Field } from "@/components/Field";
 import { behaviors } from "@/lib/api";
@@ -42,6 +42,40 @@ const LEVELS: { n: number; title: string }[] = [
   { n: 4, title: "Түвшин 4 — Ноцтой үйлдэл" },
 ];
 
+// Global engine knobs (mirror sentry-ai behavior.DEFAULT_ENGINE) with Mongolian
+// labels + sensible step sizes for the number inputs.
+const ENGINE_FIELDS: { key: string; label: string; step: number; hint: string }[] = [
+  { key: "smooth_frames", label: "Тогтворжилт", step: 1, hint: "Оноо өгөхөөс өмнө дохио дараалан илрэх frame (давтамж)" },
+  { key: "decay_idle", label: "Бууралт (сул)", step: 0.005, hint: "Бараа барихгүй үед оноо frame тутам ийш үржинэ (0–1)" },
+  { key: "decay_holding", label: "Бууралт (барьсан)", step: 0.001, hint: "Бараа барьсан үед оноо удаан буурна (0–1)" },
+  { key: "sequence_window_sec", label: "Дарааллын цонх (сек)", step: 5, hint: "Үйлдлүүд энэ хугацаанд дараалбал bonus" },
+  { key: "loiter_radius_frac", label: "Зогсолтын радиус", step: 0.05, hint: "Нэг байранд тооцох радиус (биеийн өндрийн харьцаа)" },
+  { key: "stale_track_sec", label: "Track хадгалах (сек)", step: 1, hint: "Хүн алга болсны дараа төлөвийг хадгалах хугацаа" },
+];
+
+// Friendly Mongolian labels for per-detector params. Unknown keys fall back to
+// the raw key so a future sentry-ai param still renders an editable input.
+const PARAM_LABELS: Record<string, string> = {
+  offset_frac: "Хазайлт (өндрийн %)",
+  collapse_frac: "Мөр нарийсалт",
+  ema_alpha: "Тэгшитгэл",
+  frac: "Мэдрэмж (өндрийн %)",
+  hold_floor: "Доод оноо (барьсан)",
+  cadence: "Давтамж (frame)",
+  radius_frac: "Радиус (өндрийн %)",
+  seconds: "Хугацаа (сек)",
+};
+
+/** True if two numeric maps differ over the union of their keys. */
+function numMapsDiffer(
+  a: Record<string, number>,
+  b: Record<string, number>,
+): boolean {
+  const keys = new Set([...Object.keys(a), ...Object.keys(b)]);
+  for (const k of keys) if ((a[k] ?? null) !== (b[k] ?? null)) return true;
+  return false;
+}
+
 /** Super-admin-only editor for the GLOBAL behavior config (weights +
  * 4-level thresholds). The backend PATCH /behaviors is super-admin gated. */
 export function BehaviorsPage() {
@@ -52,6 +86,9 @@ export function BehaviorsPage() {
   const [greenMax, setGreenMax] = useState<number>(DEF_GREEN);
   const [yellowMax, setYellowMax] = useState<number>(DEF_YELLOW);
   const [highMax, setHighMax] = useState<number>(DEF_HIGH);
+  // Global engine knobs + per-detector tuning params (ADR-0024 v2 fine-tuning).
+  const [engine, setEngine] = useState<Record<string, number>>({});
+  const [paramsByKey, setParamsByKey] = useState<Record<string, Record<string, number>>>({});
   const [saving, setSaving] = useState(false);
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [addOpen, setAddOpen] = useState(false);
@@ -63,6 +100,10 @@ export function BehaviorsPage() {
     setGreenMax(j.thresholds.green_max ?? DEF_GREEN);
     setYellowMax(j.thresholds.yellow_max ?? DEF_YELLOW);
     setHighMax(j.thresholds.high_max ?? DEF_HIGH);
+    setEngine({ ...(j.engine ?? {}) });
+    setParamsByKey(
+      Object.fromEntries(j.dimensions.map((d) => [d.key, { ...(d.params ?? {}) }])),
+    );
   }
 
   useEffect(() => {
@@ -84,25 +125,37 @@ export function BehaviorsPage() {
     ? data.dimensions.some((d) => weights[d.key] !== d.weight) ||
       greenMax !== (data.thresholds.green_max ?? DEF_GREEN) ||
       yellowMax !== (data.thresholds.yellow_max ?? DEF_YELLOW) ||
-      highMax !== (data.thresholds.high_max ?? DEF_HIGH)
+      highMax !== (data.thresholds.high_max ?? DEF_HIGH) ||
+      numMapsDiffer(engine, data.engine ?? {}) ||
+      data.dimensions.some((d) => numMapsDiffer(paramsByKey[d.key] ?? {}, d.params ?? {}))
     : false;
 
   const thresholdValid =
     greenMax >= 0 && yellowMax > greenMax && highMax > yellowMax;
 
   async function save() {
-    if (!dirty || !thresholdValid) return;
+    if (!data || !dirty || !thresholdValid) return;
     setSaving(true);
     setErr(null);
     try {
-      const fresh = await behaviors.patch({
+      // 1) Bulk patch: weights + thresholds + engine knobs (one call).
+      let fresh = await behaviors.patch({
         weights,
         thresholds: {
           green_max: greenMax,
           yellow_max: yellowMax,
           high_max: highMax,
         },
+        engine,
       });
+      // 2) Per-detector params changed → one PATCH /dimensions/{key} each.
+      for (const d of data.dimensions) {
+        if (numMapsDiffer(paramsByKey[d.key] ?? {}, d.params ?? {})) {
+          fresh = await behaviors.updateDimension(d.key, {
+            params: paramsByKey[d.key] ?? {},
+          });
+        }
+      }
       hydrate(fresh);
       setSavedAt(new Date().toLocaleTimeString("mn-MN"));
     } catch (e) {
@@ -244,6 +297,45 @@ export function BehaviorsPage() {
         </CardContent>
       </Card>
 
+      {/* Global engine knobs (smooth-frames / decay / sequence window / loiter radius) */}
+      <Card className="mb-6">
+        <CardHeader>
+          <CardTitle className="text-base">Engine нарийн тохиргоо</CardTitle>
+          <CardDescription>
+            Глобал параметрүүд — тогтворжилт (давтамж), оноо бууралт, дарааллын
+            цонх г.м. Хадгалсны дараа sentry-ai ~30 секундэд хүлээн авна.
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+            {ENGINE_FIELDS.map((f) => (
+              <div
+                key={f.key}
+                className="rounded-md border border-[var(--color-border)] p-3"
+              >
+                <div className="text-sm font-medium">{f.label}</div>
+                <p className="mb-2 text-xs text-[var(--color-muted-foreground)]">
+                  {f.hint}
+                </p>
+                <input
+                  type="number"
+                  step={f.step}
+                  min={0}
+                  value={engine[f.key] ?? ""}
+                  onChange={(e) =>
+                    setEngine((prev) => ({
+                      ...prev,
+                      [f.key]: Number(e.target.value) || 0,
+                    }))
+                  }
+                  className="w-28 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+                />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
+
       {/* Criteria grouped by level */}
       {LEVELS.map((lvl) => {
         const dims = data.dimensions.filter((d) => (d.level ?? 1) === lvl.n);
@@ -267,8 +359,8 @@ export function BehaviorsPage() {
                 </thead>
                 <tbody>
                   {dims.map((d) => (
+                    <Fragment key={d.key}>
                     <tr
-                      key={d.key}
                       className={`border-b border-[var(--color-border)] ${
                         !d.active ? "opacity-60" : ""
                       }`}
@@ -334,6 +426,45 @@ export function BehaviorsPage() {
                         )}
                       </td>
                     </tr>
+                    {d.has_detector &&
+                      Object.keys(paramsByKey[d.key] ?? {}).length > 0 && (
+                        <tr className="border-b border-[var(--color-border)] bg-[var(--color-muted)]/40">
+                          <td colSpan={6} className="px-3 pb-3 pt-0">
+                            <div className="flex flex-wrap items-end gap-3">
+                              <span className="pt-4 text-xs text-[var(--color-muted-foreground)]">
+                                Нарийн тохиргоо:
+                              </span>
+                              {Object.keys(paramsByKey[d.key] ?? {})
+                                .sort()
+                                .map((pk) => (
+                                  <label key={pk} className="flex flex-col gap-0.5">
+                                    <span className="text-xs text-[var(--color-muted-foreground)]">
+                                      {PARAM_LABELS[pk] ?? pk}
+                                    </span>
+                                    <input
+                                      type="number"
+                                      step="0.01"
+                                      min="0"
+                                      value={paramsByKey[d.key]?.[pk] ?? ""}
+                                      onChange={(e) => {
+                                        const val = Number(e.target.value) || 0;
+                                        setParamsByKey((prev) => ({
+                                          ...prev,
+                                          [d.key]: {
+                                            ...(prev[d.key] ?? {}),
+                                            [pk]: val,
+                                          },
+                                        }));
+                                      }}
+                                      className="w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-xs focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+                                    />
+                                  </label>
+                                ))}
+                            </div>
+                          </td>
+                        </tr>
+                      )}
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
