@@ -41,7 +41,35 @@ export class ApiError extends Error {
   }
 }
 
-async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
+// Single-flight access-token refresh. The access cookie lives ~15 min; the
+// refresh cookie ~7 days (Path=/api/v1/auth). Without this, every WRITE
+// (PATCH/POST/DELETE) starts returning 401 once the access token expires while
+// the panel stays open. Because GET /behaviors is PUBLIC, the page still shows
+// data — so it looks like "enabling/saving just errors" ("Шинэчилж чадсангүй")
+// rather than a logged-out state. On a 401 we refresh once (collapsing
+// concurrent 401s into a single refresh) and retry the original request.
+let refreshInFlight: Promise<boolean> | null = null;
+
+async function refreshAccessToken(): Promise<boolean> {
+  if (!refreshInFlight) {
+    refreshInFlight = fetch(`${BASE}/api/v1/auth/refresh`, {
+      method: "POST",
+      credentials: "include",
+    })
+      .then((r) => r.ok)
+      .catch(() => false)
+      .finally(() => {
+        refreshInFlight = null;
+      });
+  }
+  return refreshInFlight;
+}
+
+async function request<T>(
+  path: string,
+  init: RequestInit = {},
+  retried = false,
+): Promise<T> {
   const res = await fetch(`${BASE}${path}`, {
     ...init,
     credentials: "include",
@@ -50,6 +78,13 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
       ...(init.headers ?? {}),
     },
   });
+  // Access token expired → refresh once and retry. Skip the auth endpoints
+  // themselves so a failing refresh/login can't loop.
+  if (res.status === 401 && !retried && !path.startsWith("/api/v1/auth/")) {
+    if (await refreshAccessToken()) {
+      return request<T>(path, init, true);
+    }
+  }
   if (!res.ok) {
     let detail = res.statusText;
     try {
