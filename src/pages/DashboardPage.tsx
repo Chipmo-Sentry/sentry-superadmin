@@ -18,6 +18,7 @@ import {
 import { useEffect, useState } from "react";
 
 import { admin, type AlertAnalytics, type FeedbackAnalytics } from "@/lib/api";
+import { categoryLabel } from "@/lib/labels";
 import type { AdminStats } from "@/lib/types";
 
 const CARDS: { key: keyof AdminStats; label: string; icon: LucideIcon }[] = [
@@ -30,14 +31,6 @@ const CARDS: { key: keyof AdminStats; label: string; icon: LucideIcon }[] = [
   { key: "alerts", label: "Нийт сэжиг", icon: Bell },
   { key: "alerts_24h", label: "Сэжиг (24ц)", icon: ShieldAlert },
 ];
-
-// VLM behaviour categories → Mongolian labels.
-const CATEGORY_LABELS: Record<string, string> = {
-  browsing: "Тойрч үзэх",
-  cart_pickup: "Сагсанд хийх",
-  pocket_conceal: "Халаасанд нуух",
-  other: "Бусад",
-};
 
 const CATEGORY_COLORS: Record<string, string> = {
   browsing: "#3b82f6",
@@ -110,7 +103,7 @@ function AlertAnalyticsSection() {
             {cats.map(([cat, n]) => (
               <div key={cat} className="flex items-center gap-3">
                 <span className="w-28 shrink-0 text-sm">
-                  {CATEGORY_LABELS[cat] ?? cat}
+                  {categoryLabel(cat)}
                 </span>
                 <div className="h-4 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
                   <div
@@ -176,7 +169,7 @@ function FeedbackAnalyticsSection() {
             <div className="space-y-1.5">
               {cats.map(([cat, c]) => (
                 <div key={cat} className="flex items-center gap-3 text-sm">
-                  <span className="w-28 shrink-0">{CATEGORY_LABELS[cat] ?? cat}</span>
+                  <span className="w-28 shrink-0">{categoryLabel(cat)}</span>
                   <div className="h-3 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
                     <div className="h-full bg-[#ef4444]" style={{ width: `${c.fp_rate * 100}%` }} />
                   </div>

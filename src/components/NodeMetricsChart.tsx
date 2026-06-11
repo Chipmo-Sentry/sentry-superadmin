@@ -164,11 +164,14 @@ function Chart({
           ))}
           {/* whole-machine (solid + area) */}
           {seg1.map((seg, i) => {
+            const firstPt = seg[0];
+            const lastPt = seg[seg.length - 1];
+            if (!firstPt || !lastPt) return null; // segmentize never emits empty segments
             if (seg.length === 1) {
-              return <circle key={`a${i}`} cx={seg[0].x} cy={seg[0].y} r={1.8} fill={color} />;
+              return <circle key={`a${i}`} cx={firstPt.x} cy={firstPt.y} r={1.8} fill={color} />;
             }
             const line = seg.map((c) => `${c.x.toFixed(1)},${c.y.toFixed(1)}`).join(" ");
-            const area = `${seg[0].x.toFixed(1)},${H} ${line} ${seg[seg.length - 1].x.toFixed(1)},${H}`;
+            const area = `${firstPt.x.toFixed(1)},${H} ${line} ${lastPt.x.toFixed(1)},${H}`;
             return (
               <g key={`a${i}`}>
                 <polyline points={area} fill={color} fillOpacity={0.12} stroke="none" />
@@ -177,9 +180,11 @@ function Chart({
             );
           })}
           {/* sentry-only (dashed, no area) */}
-          {seg2.map((seg, i) =>
-            seg.length === 1 ? (
-              <circle key={`b${i}`} cx={seg[0].x} cy={seg[0].y} r={1.6} fill={color} fillOpacity={0.7} />
+          {seg2.map((seg, i) => {
+            const firstPt = seg[0];
+            if (!firstPt) return null; // segmentize never emits empty segments
+            return seg.length === 1 ? (
+              <circle key={`b${i}`} cx={firstPt.x} cy={firstPt.y} r={1.6} fill={color} fillOpacity={0.7} />
             ) : (
               <polyline
                 key={`b${i}`}
@@ -190,8 +195,8 @@ function Chart({
                 strokeDasharray="3 2"
                 strokeOpacity={0.85}
               />
-            ),
-          )}
+            );
+          })}
           {hp && (
             <>
               <line x1={hx} y1={0} x2={hx} y2={H} stroke={color} strokeOpacity={0.6} strokeWidth={1} />
@@ -258,16 +263,23 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
     .map((m) => ({ m, t: Date.parse(m.ts) }))
     .filter((r) => !Number.isNaN(r.t))
     .sort((a, b) => a.t - b.t);
-  const last = rows.length ? rows[rows.length - 1].m : null;
+  const lastRow = rows[rows.length - 1];
+  const last = lastRow?.m ?? null;
 
   const windowMs = RANGE_MS[range] ?? DAY;
   const now = Date.now();
-  const lastT = rows.length ? rows[rows.length - 1].t : now;
+  const lastT = lastRow?.t ?? now;
   const windowEnd = Math.max(now, lastT);
   const windowStart = windowEnd - windowMs;
 
-  const deltas = rows.slice(1).map((r, i) => r.t - rows[i].t).sort((a, b) => a - b);
-  const medianDelta = deltas.length ? deltas[Math.floor(deltas.length / 2)] : 60_000;
+  const deltas: number[] = [];
+  let prevT: number | null = null;
+  for (const r of rows) {
+    if (prevT != null) deltas.push(r.t - prevT);
+    prevT = r.t;
+  }
+  deltas.sort((a, b) => a - b);
+  const medianDelta = deltas[Math.floor(deltas.length / 2)] ?? 60_000;
   const gapMs = Math.max(medianDelta * 3, 120_000);
 
   const seriesOf = (
