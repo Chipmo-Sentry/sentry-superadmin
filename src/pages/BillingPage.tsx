@@ -111,6 +111,17 @@ function formatDate(iso: string): string {
   return Number.isNaN(d.getTime()) ? iso : d.toLocaleDateString("mn-MN");
 }
 
+/** Format a Date as a `<input type="datetime-local">` value (LOCAL time,
+ * "YYYY-MM-DDTHH:mm"). On submit `new Date(value)` reads it back as local and
+ * `.toISOString()` converts to UTC — so the round-trip stays consistent. */
+function toDatetimeLocal(d: Date): string {
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return (
+    `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}` +
+    `T${pad(d.getHours())}:${pad(d.getMinutes())}`
+  );
+}
+
 // --- tiny local toast ----------------------------------------------------------
 
 type ToastMsg = { id: number; tone: "success" | "danger"; text: string };
@@ -630,6 +641,8 @@ function CreatePromoModal({
   const [amount, setAmount] = useState("");
   const [freeDays, setFreeDays] = useState("");
   const [validUntil, setValidUntil] = useState("");
+  // True once the operator hand-edits the calendar, so we stop auto-filling it.
+  const [validUntilTouched, setValidUntilTouched] = useState(false);
   const [maxRedemptions, setMaxRedemptions] = useState("1");
   const [note, setNote] = useState("");
   const [saving, setSaving] = useState(false);
@@ -642,11 +655,25 @@ function CreatePromoModal({
       setAmount("");
       setFreeDays("");
       setValidUntil("");
+      setValidUntilTouched(false);
       setMaxRedemptions("1");
       setNote("");
       setError(null);
     }
   }, [open]);
+
+  // "Үнэгүй өдөр" код: оруулсан өдрийн тоогоор хүчинтэй хугацааг ОДООГООС
+  // автоматаар тооцож календарт бөглөнө (гараар тааруулж зөрүү гаргахгүй).
+  // Операторын гар засварыг (validUntilTouched) дарж бичихгүй.
+  useEffect(() => {
+    if (kind !== "free_days" || validUntilTouched) return;
+    const days = Math.floor(Number(freeDays));
+    if (!Number.isFinite(days) || days <= 0) {
+      setValidUntil("");
+      return;
+    }
+    setValidUntil(toDatetimeLocal(new Date(Date.now() + days * 86_400_000)));
+  }, [kind, freeDays, validUntilTouched]);
 
   const valueOk =
     kind === "bonus_amount" ? Number(amount) > 0 : Number(freeDays) > 0;
@@ -735,12 +762,19 @@ function CreatePromoModal({
           <div className="grid gap-4 sm:grid-cols-2">
             <Field
               label="Хүчинтэй дуусах"
-              hint="Хоосон бол ямар ч хугацаагаар"
+              hint={
+                kind === "free_days"
+                  ? "Өдрийн тоогоор автоматаар бөглөгдөнө — өөрчилж болно"
+                  : "Хоосон бол ямар ч хугацаагаар"
+              }
             >
               <Input
                 type="datetime-local"
                 value={validUntil}
-                onChange={(e) => setValidUntil(e.target.value)}
+                onChange={(e) => {
+                  setValidUntil(e.target.value);
+                  setValidUntilTouched(true);
+                }}
                 disabled={saving}
               />
             </Field>
