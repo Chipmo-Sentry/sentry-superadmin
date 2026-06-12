@@ -13,6 +13,14 @@ import type {
   AiNodeUpdate,
   BehaviorConfig,
   BehaviorConfigPatch,
+  BillingAnalytics,
+  BillingOverview,
+  CreditRequest,
+  JournalEntryPublic,
+  PromoCodeCreate,
+  PromoCodePublic,
+  PromoCodeUpdate,
+  TopupRequest,
   DimensionCreate,
   DimensionUpdate,
   LeadPublic,
@@ -221,6 +229,45 @@ export interface NodeMetric {
   sentry_ram_mb: number | null;
   sentry_vram_mb: number | null;
 }
+
+export const billing = {
+  overview: () => request<BillingOverview>("/api/v1/admin/billing/overview"),
+  journal: (orgId: string, limit: number, offset: number) =>
+    request<JournalEntryPublic[]>(
+      `/api/v1/admin/billing/orgs/${encodeURIComponent(orgId)}/journal?limit=${limit}&offset=${offset}`,
+    ),
+  topup: (orgId: string, body: TopupRequest) =>
+    request<JournalEntryPublic>(
+      `/api/v1/admin/billing/orgs/${encodeURIComponent(orgId)}/topup`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  grantCredit: (orgId: string, body: CreditRequest) =>
+    request<void>(
+      `/api/v1/admin/billing/orgs/${encodeURIComponent(orgId)}/credit`,
+      { method: "POST", body: JSON.stringify(body) },
+    ),
+  revokeCredit: (orgId: string) =>
+    request<void>(
+      `/api/v1/admin/billing/orgs/${encodeURIComponent(orgId)}/credit`,
+      { method: "DELETE" },
+    ),
+  listPromoCodes: () =>
+    request<PromoCodePublic[]>("/api/v1/admin/billing/promo-codes"),
+  createPromoCode: (body: PromoCodeCreate) =>
+    request<PromoCodePublic>("/api/v1/admin/billing/promo-codes", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  updatePromoCode: (promoId: string, body: PromoCodeUpdate) =>
+    request<PromoCodePublic>(
+      `/api/v1/admin/billing/promo-codes/${encodeURIComponent(promoId)}`,
+      { method: "PATCH", body: JSON.stringify(body) },
+    ),
+  analytics: (range: string) =>
+    request<BillingAnalytics>(
+      `/api/v1/admin/billing/analytics?range=${encodeURIComponent(range)}`,
+    ),
+};
 
 export const behaviors = {
   get: () => request<BehaviorConfig>("/api/v1/behaviors"),

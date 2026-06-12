@@ -7,6 +7,7 @@ import {
   LayoutDashboard,
   LogOut,
   Users,
+  Wallet,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
@@ -17,6 +18,7 @@ const NAV = [
   { to: "/orgs", label: "Байгууллагууд", icon: Building2, end: false },
   { to: "/users", label: "Хэрэглэгчид", icon: Users, end: false },
   { to: "/leads", label: "Demo хүсэлтүүд", icon: Inbox, end: false },
+  { to: "/billing", label: "Төлбөр", icon: Wallet, end: false },
   { to: "/ai-nodes", label: "AI сервер", icon: Cpu, end: false },
   { to: "/behaviors", label: "Сэжиг шалгуур", icon: Brain, end: false },
 ] as const;

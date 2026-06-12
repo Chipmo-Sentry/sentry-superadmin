@@ -38,3 +38,101 @@ export type LeadUpdate = Schemas["LeadUpdate"];
 export type AiNodePublic = Schemas["AiNodePublic"];
 export type AiNodeUpdate = Schemas["AiNodeUpdate"];
 export type AiNodePairingCode = Schemas["AiNodePairingCodePublic"];
+
+// === Billing (super-admin) ===
+// HAND-WRITTEN: the committed OpenAPI snapshot predates the billing endpoints,
+// so these mirror sentry-backend/src/sentry_backend/schemas/billing.py by hand.
+// Replace with Schemas["..."] aliases after the next `npm run fetch-openapi`.
+
+export type BillingStatus = "active" | "credit" | "suspended";
+export type JournalKind = "topup" | "usage_charge" | "promo_credit" | "adjustment";
+export type LedgerAccount = "cash" | "org_wallet" | "revenue" | "promo_expense";
+export type PromoKind = "bonus_amount" | "free_days";
+
+export interface OrgBillingRow {
+  org_id: string;
+  name: string;
+  slug: string;
+  balance_mnt: number;
+  status: BillingStatus;
+  daily_rate_mnt: number;
+  stores_count: number;
+  cameras_count: number;
+  credit_until: string | null;
+  promo_free_until: string | null;
+  last_topup_at: string | null;
+}
+
+export interface BillingOverview {
+  orgs: OrgBillingRow[];
+  total_balance_mnt: number;
+  total_daily_rate_mnt: number;
+  active_count: number;
+  credit_count: number;
+  suspended_count: number;
+}
+
+export interface JournalEntryPublic {
+  id: string;
+  posted_at: string;
+  kind: JournalKind;
+  dr_account: LedgerAccount;
+  cr_account: LedgerAccount;
+  amount_mnt: number;
+  description: string;
+  charge_date: string | null;
+  meta: Record<string, unknown> | null;
+}
+
+export interface TopupRequest {
+  amount_mnt: number;
+  note?: string | null;
+}
+
+export interface CreditRequest {
+  until: string; // ISO datetime, must be in the future
+  note?: string | null;
+}
+
+export interface PromoCodeCreate {
+  code?: string | null; // omitted/blank → backend auto-generates
+  kind: PromoKind;
+  amount_mnt?: number | null; // required when kind=bonus_amount
+  free_days?: number | null; // required when kind=free_days
+  valid_until?: string | null; // null → no expiry
+  max_redemptions?: number;
+  note?: string | null;
+}
+
+export interface PromoCodeUpdate {
+  active?: boolean | null;
+  note?: string | null;
+}
+
+export interface PromoCodePublic {
+  id: string;
+  code: string;
+  kind: PromoKind;
+  amount_mnt: number | null;
+  free_days: number | null;
+  valid_until: string | null;
+  max_redemptions: number;
+  redeemed_count: number;
+  active: boolean;
+  note: string | null;
+  created_at: string;
+}
+
+export interface BillingDayPoint {
+  day: string; // ISO date (totals row carries the range key instead)
+  usage_mnt: number;
+  topup_mnt: number;
+  promo_mnt: number;
+}
+
+export interface BillingAnalytics {
+  by_day: BillingDayPoint[];
+  totals: BillingDayPoint;
+  suspended_count: number;
+  credit_count: number;
+}
