@@ -6,6 +6,7 @@ import {
   CardDescription,
   CardHeader,
   CardTitle,
+  Field,
   Input,
   Modal,
   ModalContent,
@@ -25,7 +26,6 @@ import {
 } from "lucide-react";
 import { Fragment, useEffect, useState } from "react";
 
-import { Field } from "@/components/Field";
 import { behaviors } from "@/lib/api";
 import type { BehaviorConfig } from "@/lib/types";
 

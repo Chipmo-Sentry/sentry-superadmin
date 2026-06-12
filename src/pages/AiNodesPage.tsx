@@ -7,12 +7,14 @@ import {
   DropdownContent,
   DropdownItem,
   DropdownTrigger,
+  Field,
   Input,
   Modal,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalTitle,
+  Select,
   Spinner,
   Table,
   TableBody,
@@ -26,7 +28,6 @@ import { Fragment, useEffect, useState } from "react";
 
 import { NodeMetricsChart } from "@/components/NodeMetricsChart";
 
-import { Field } from "@/components/Field";
 import { admin } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
@@ -36,9 +37,6 @@ const PROVIDERS = ["minicpm-v-2.6", "qwen2.5-vl-7b"];
  * always resolves to the newest release asset, so this never needs bumping. */
 const AI_SETUP_DOWNLOAD_URL =
   "https://github.com/Chipmo-Sentry/sentry-ai/releases/latest/download/ChipmoSentryAi-Setup.exe";
-
-const selectClass =
-  "h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm disabled:opacity-50";
 
 const gb = (mb: unknown): string => (Number(mb) / 1024).toFixed(1);
 
@@ -409,18 +407,17 @@ function EditNodeModal({
             />
           </Field>
           <Field label="VLM provider">
-            <select
+            <Select
               value={provider}
               onChange={(e) => setProvider(e.target.value)}
               disabled={saving}
-              className={selectClass}
             >
               {PROVIDERS.map((p) => (
                 <option key={p} value={p}>
                   {p}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Frame skip" hint="Хэдэн кадр тутамд нэг шинжлэх (0–30)">
             <Input

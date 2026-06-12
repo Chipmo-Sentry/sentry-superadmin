@@ -7,12 +7,14 @@ import {
   DropdownContent,
   DropdownItem,
   DropdownTrigger,
+  Field,
   Input,
   Modal,
   ModalContent,
   ModalFooter,
   ModalHeader,
   ModalTitle,
+  Select,
   Spinner,
   Table,
   TableBody,
@@ -24,7 +26,6 @@ import {
 import { MoreHorizontal, UserPlus } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { Field } from "@/components/Field";
 import { useAuth } from "@/context/AuthContext";
 import { admin } from "@/lib/api";
 import type { OrganizationPublic, OrgRole, UserPublic } from "@/lib/types";
@@ -34,9 +35,6 @@ const ROLES: { value: OrgRole; label: string }[] = [
   { value: "admin", label: "Админ (admin)" },
   { value: "staff", label: "Ажилтан (staff)" },
 ];
-
-const selectClass =
-  "h-10 w-full rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] px-3 text-sm disabled:opacity-50";
 
 export function UsersPage() {
   const { user: me } = useAuth();
@@ -262,33 +260,31 @@ function InviteUserModal({
             />
           </Field>
           <Field label="Байгууллага" required>
-            <select
+            <Select
               value={orgId}
               onChange={(e) => setOrgId(e.target.value)}
               required
               disabled={saving}
-              className={selectClass}
             >
               {orgs.map((o) => (
                 <option key={o.id} value={o.id}>
                   {o.name}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <Field label="Эрх" required>
-            <select
+            <Select
               value={role}
               onChange={(e) => setRole(e.target.value as OrgRole)}
               disabled={saving}
-              className={selectClass}
             >
               {ROLES.map((r) => (
                 <option key={r.value} value={r.value}>
                   {r.label}
                 </option>
               ))}
-            </select>
+            </Select>
           </Field>
           <label className="flex items-center gap-2 text-sm">
             <input

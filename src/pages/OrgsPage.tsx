@@ -4,6 +4,7 @@ import {
   Card,
   CardContent,
   EmptyState,
+  Field,
   Input,
   Modal,
   ModalContent,
@@ -22,7 +23,6 @@ import { Building2, Plus } from "lucide-react";
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
-import { Field } from "@/components/Field";
 import { admin } from "@/lib/api";
 import type { OrganizationPublic } from "@/lib/types";
 
