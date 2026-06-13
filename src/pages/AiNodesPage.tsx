@@ -94,6 +94,72 @@ function parseHealth(raw: string | null): Record<string, boolean> | null {
   }
 }
 
+interface ProviderStatus {
+  effective: string | null;
+  ready: boolean | null;
+  error: string | null;
+}
+
+/** Effective VLM provider + readiness the node reported in its last heartbeat
+ * (central-control feedback). null when the node hasn't reported it yet. */
+function parseProviderStatus(raw: string | null): ProviderStatus | null {
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as {
+      provider_effective?: unknown;
+      provider_ready?: unknown;
+      provider_error?: unknown;
+    };
+    if (
+      !("provider_effective" in t) &&
+      !("provider_ready" in t) &&
+      !("provider_error" in t)
+    ) {
+      return null; // old node version — no central-control feedback
+    }
+    return {
+      effective: typeof t.provider_effective === "string" ? t.provider_effective : null,
+      ready: typeof t.provider_ready === "boolean" ? t.provider_ready : null,
+      error: typeof t.provider_error === "string" ? t.provider_error : null,
+    };
+  } catch {
+    return null;
+  }
+}
+
+/** Compares the DESIRED provider (n.provider, set by the dropdown) to what the
+ * node reported it's actually running, so the operator can see the server really
+ * applied the change — and any error (e.g. model not pulled). */
+function ProviderSyncBadge({ desired, status }: { desired: string; status: ProviderStatus | null }) {
+  if (status?.error) {
+    return (
+      <div className="mt-0.5 text-xs" style={{ color: "var(--color-danger)" }} title={status.error}>
+        ⚠ {status.error}
+      </div>
+    );
+  }
+  if (status === null || status.effective === null) {
+    return (
+      <div className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+        ⏳ серверээс хариу хүлээж байна…
+      </div>
+    );
+  }
+  if (status.effective === desired && status.ready) {
+    return (
+      <div className="mt-0.5 text-xs" style={{ color: "var(--color-success)" }}>
+        ✓ серверт идэвхтэй
+      </div>
+    );
+  }
+  // Reported, but not yet matching the desired pick → still rolling out.
+  return (
+    <div className="mt-0.5 text-xs" style={{ color: "var(--color-warning, #d97706)" }}>
+      ⏳ хэрэгжүүлж байна… (одоо: {status.effective})
+    </div>
+  );
+}
+
 const HEALTH_ORDER = ["ai", "ollama", "ingest", "tunnel"];
 const HEALTH_LABELS: Record<string, string> = {
   ai: "AI",
@@ -253,7 +319,13 @@ export function AiNodesPage() {
                       <HealthDots health={parseHealth(n.telemetry)} />
                     </TableCell>
                     <TableCell className="text-sm">
-                      {n.provider} · skip {n.frame_skip}
+                      <div>
+                        {n.provider} · skip {n.frame_skip}
+                      </div>
+                      <ProviderSyncBadge
+                        desired={n.provider}
+                        status={parseProviderStatus(n.telemetry)}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
