@@ -131,13 +131,8 @@ function parseProviderStatus(raw: string | null): ProviderStatus | null {
  * node reported it's actually running, so the operator can see the server really
  * applied the change — and any error (e.g. model not pulled). */
 function ProviderSyncBadge({ desired, status }: { desired: string; status: ProviderStatus | null }) {
-  if (status?.error) {
-    return (
-      <div className="mt-0.5 text-xs" style={{ color: "var(--color-danger)" }} title={status.error}>
-        ⚠ {status.error}
-      </div>
-    );
-  }
+  const amber = { color: "var(--color-warning, #d97706)" };
+  // No heartbeat with central-control feedback yet (old node / just paired).
   if (status === null || status.effective === null) {
     return (
       <div className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
@@ -145,17 +140,33 @@ function ProviderSyncBadge({ desired, status }: { desired: string; status: Provi
       </div>
     );
   }
-  if (status.effective === desired && status.ready) {
+  // The node hasn't caught up to the dropdown pick yet — rolling out. Any error
+  // here is about the PREVIOUS provider, so don't show it; show in-progress.
+  if (status.effective !== desired) {
+    return (
+      <div className="mt-0.5 text-xs" style={amber}>
+        ⏳ хэрэгжүүлж байна… (сервер дээр одоо: {status.effective})
+      </div>
+    );
+  }
+  // effective === desired → the error/ready is about the CURRENT pick.
+  if (status.error) {
+    return (
+      <div className="mt-0.5 text-xs" style={{ color: "var(--color-danger)" }} title={status.error}>
+        ⚠ {status.error}
+      </div>
+    );
+  }
+  if (status.ready) {
     return (
       <div className="mt-0.5 text-xs" style={{ color: "var(--color-success)" }}>
         ✓ серверт идэвхтэй
       </div>
     );
   }
-  // Reported, but not yet matching the desired pick → still rolling out.
   return (
-    <div className="mt-0.5 text-xs" style={{ color: "var(--color-warning, #d97706)" }}>
-      ⏳ хэрэгжүүлж байна… (одоо: {status.effective})
+    <div className="mt-0.5 text-xs" style={amber}>
+      ⏳ шалгаж байна…
     </div>
   );
 }
@@ -212,8 +223,12 @@ export function AiNodesPage() {
     }
   }
 
+  // Poll so provider apply-status (⏳→✓) + telemetry update live without a manual
+  // reload — the node reports a fresh effective provider/readiness each heartbeat.
   useEffect(() => {
     void reload();
+    const id = setInterval(() => void reload(), 8000);
+    return () => clearInterval(id);
   }, []);
 
   async function generateCode() {
