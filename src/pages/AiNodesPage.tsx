@@ -31,7 +31,9 @@ import { NodeMetricsChart } from "@/components/NodeMetricsChart";
 import { admin } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
-const PROVIDERS = ["minicpm-v-2.6", "qwen2.5-vl-7b"];
+// VLM providers the node can hot-apply (must match sentry-ai providers/factory.py
+// _REGISTRY keys). Default first. qwen2.5-vl-7b is deprecated, kept for rollback.
+const PROVIDERS = ["qwen3-vl-4b", "minicpm-v-2.6", "qwen3-vl-vllm", "qwen2.5-vl-7b"];
 
 /** Latest published AI server installer (GitHub Releases). `latest/download`
  * always resolves to the newest release asset, so this never needs bumping. */

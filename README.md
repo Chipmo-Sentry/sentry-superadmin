@@ -1,78 +1,84 @@
 # sentry-superadmin
 
-Chipmo Sentry super-admin panel — a Vite + React SPA for Chipmo staff to manage
-organizations, users, and memberships across all tenants. Consumes
-[`@chipmo-sentry/ui-kit`](../sentry-ui-kit).
+The platform-operator console for **Chipmo Sentry** — a single-page app where Chipmo staff (not customers)
+run the whole tenancy: organizations, users, demo leads, the AI behaviour catalog, and the fleet of AI
+compute nodes.
 
-## Stack
+Vite 6 · React 19 · React Router 6 · Tailwind v4 · [sentry-ui-kit](https://github.com/Chipmo-Sentry/sentry-ui-kit) · Express proxy · Apache-2.0
 
-- **Vite 6** + **React 19** SPA
-- **React Router 6** (client-side routing)
-- **Tailwind CSS v4** (via `@tailwindcss/vite`) + ui-kit design tokens
-- Plain `fetch` API client, **cookie-based auth** (`credentials: "include"`)
+---
 
-## Routes
+## What it manages
 
-| Path | Page | Backend |
-|---|---|---|
-| `/login` | Super-admin login | `POST /api/v1/auth/login` |
-| `/` | Dashboard (counts) | `GET /api/v1/admin/stats` |
-| `/orgs` | Organizations list + create | `GET`/`POST /api/v1/admin/orgs` |
-| `/orgs/:orgId` | Org detail + members | `GET /api/v1/admin/orgs/{id}/members` |
-| `/users` | Users list, invite, enable/disable, toggle super-admin | `GET`/`POST /api/v1/admin/users`, `PATCH /api/v1/admin/users/{id}` |
+| Page | Does |
+|---|---|
+| **Dashboard** (`/`) | stat cards (orgs, users, stores, cameras, AI nodes online, alerts/24h) + alert & feedback analytics |
+| **Orgs** (`/orgs`, `/orgs/:id`) | list + create organizations; view members |
+| **Users** (`/users`) | list, invite, enable/disable, toggle super-admin (with self-lockout guard) |
+| **Leads** (`/leads`) | triage demo requests captured by the landing site (status + notes) |
+| **Behaviours** (`/behaviors`) | the risk-scoring criteria catalog — add / enable / disable / delete dimensions, edit weights + 4-level thresholds |
+| **AI nodes** (`/ai-nodes`) | generate a 6-digit pairing code, watch a node come online with live telemetry, configure (provider / frame-skip / enabled) or revoke it; resource time-series charts |
 
-All `/admin/*` endpoints require `is_super_admin`. A non-super-admin who logs in
-sees a "Хандах эрхгүй" (forbidden) screen.
+Every route is wrapped in `<RequireSuperAdmin>` — non-super-admins get a "Хандах эрхгүй" screen.
 
-## Develop
+---
+
+## How auth works (the same-origin trick)
+
+The SPA shares the backend's httpOnly `sentry_access` cookie. To keep that cookie `SameSite=Lax` and
+avoid any cross-site CORS problem, the app is **served by its own Express server** (`server.mjs`) that
+proxies `/api/*` to `BACKEND_ORIGIN` and serves the built SPA for everything else. The browser only ever
+talks to one origin ([ADR-0017](../docs/07-DECISIONS.md)). API calls go out with `credentials: "include"`.
+
+Types are generated from the backend's OpenAPI spec (`openapi/backend.openapi.json` →
+`src/lib/api.types.ts`) and a CI `codegen:check` fails on drift — the admin app can never disagree with the
+backend about a field name.
+
+```
+src/
+├── pages/        — LoginPage, DashboardPage, OrgsPage, OrgDetailPage, UsersPage,
+│                   LeadsPage, BehaviorsPage, AiNodesPage
+├── components/   — Layout, RequireSuperAdmin, Field, NodeMetricsChart
+├── context/      — AuthContext
+├── lib/          — api (credentials: include), api.types (generated), types
+└── main.tsx
+server.mjs        — Express: proxy /api/* → backend, SPA fallback
+```
+
+---
+
+## Quick start
 
 ```bash
+( cd ../sentry-ui-kit && npm install && npm run build )   # file: dependency
 npm install
-cp .env.example .env        # set VITE_API_BASE_URL if backend isn't localhost:8000
-npm run dev                 # http://localhost:5173
+cp .env.example .env
+npm run dev            # Vite dev server → http://localhost:5173
 ```
 
-> `@chipmo-sentry/ui-kit` is linked via `file:../sentry-ui-kit`. Build it first
-> (`cd ../sentry-ui-kit && npm install && npm run build`) so `dist/` exists.
+Scripts: `dev` · `build` (`tsc --noEmit` + `vite build`) · `preview` · `typecheck` · `lint` ·
+`fetch-openapi` · `codegen` · `codegen:check`.
 
-## Auth & CORS — important
+You'll need a backend running and a super-admin user (seed one in the backend, or bootstrap via
+`BOOTSTRAP_SUPERADMIN_*`). In dev the Vite proxy points at the backend; in production `server.mjs` does.
 
-Auth uses the same httpOnly cookie (`sentry_access`) that sentry-backend issues
-on login. The browser only attaches it when:
+---
 
-1. **The backend allows this SPA's origin with credentials.** Add the SPA origin
-   to the backend's `ALLOWED_ORIGINS` env (it already sets
-   `allow_credentials=True`):
-   - dev: `ALLOWED_ORIGINS=http://localhost:5173,http://localhost:3000`
-   - prod: `ALLOWED_ORIGINS=https://admin.sentry.chipmo.mn,...`
-2. **The SPA is served same-site as the API in production.** The cookie is
-   `SameSite=Lax`, so it rides cross-subdomain fetches only when both sides share
-   one registrable domain — e.g. `admin.sentry.chipmo.mn` (SPA) +
-   `api.sentry.chipmo.mn` (backend). Hosting the SPA on an unrelated domain would
-   require switching the backend cookie to `SameSite=None; Secure`.
+## Deployment
 
-In local dev both run on `localhost`, so the Lax cookie works out of the box.
+Target: **Railway** (Dockerfile + `railway.toml`), live at `sentry-superadmin-production.up.railway.app`.
 
-## Types — OpenAPI codegen
+The Dockerfile clones + builds `sentry-ui-kit`, builds the SPA, and ships a Node-Alpine runtime that runs
+`server.mjs` on `:8080` (healthcheck `/`). Set `BACKEND_ORIGIN` in the Railway dashboard; the backend must
+list this app's origin in `ALLOWED_ORIGINS`. Do **not** bake an absolute `VITE_API_BASE_URL` — that would
+break the same-origin cookie. CI (`codegen:check` + lint + typecheck + build) runs against the real ui-kit.
 
-Domain types in `src/lib/types.ts` are **derived** from the backend OpenAPI
-schema (`openapi/backend.openapi.json` → generated `src/lib/api.types.ts`), so
-they never drift from the backend contract.
+---
 
-```bash
-# After changing backend Pydantic schemas, with the backend running:
-npm run fetch-openapi          # API_BASE=... to point elsewhere
-# or just regenerate from the committed snapshot:
-npm run codegen
-```
+## Related repos
 
-CI runs `npm run codegen:check` and fails on drift.
+- [sentry-backend](https://github.com/Chipmo-Sentry/sentry-backend) — the admin + ai-node + leads APIs this consumes
+- [sentry-frontend](https://github.com/Chipmo-Sentry/sentry-frontend) — the customer-facing sibling
+- [sentry-ui-kit](https://github.com/Chipmo-Sentry/sentry-ui-kit) — shared components + tokens
 
-## Scripts
-
-- `npm run dev` — dev server (port 5173)
-- `npm run build` — `tsc --noEmit` typecheck + production build to `dist/`
-- `npm run preview` — serve the production build
-- `npm run typecheck` — `tsc --noEmit`
-- `npm run lint` — ESLint
-- `npm run codegen` / `codegen:check` — regenerate / verify OpenAPI types
+Platform overview: [Sentry-v.3 README](../README.md).
