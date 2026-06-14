@@ -201,18 +201,45 @@ function parseVlm(raw: string | null): VlmStatus | null {
     return null;
   }
 }
+function parseVram(raw: string | null): { used: number | null; total: number | null; gpu: number | null } {
+  const n = (v: unknown) => (typeof v === "number" ? v : null);
+  if (!raw) return { used: null, total: null, gpu: null };
+  try {
+    const t = JSON.parse(raw) as { vram_used_mb?: unknown; vram_total_mb?: unknown; gpu_pct?: unknown };
+    return { used: n(t.vram_used_mb), total: n(t.vram_total_mb), gpu: n(t.gpu_pct) };
+  } catch {
+    return { used: null, total: null, gpu: null };
+  }
+}
 
 /** Per-component CPU/RAM + VLM GPU residency, shown in the expanded panel. Answers
  * "what's actually using CPU/GPU/RAM/VRAM on this node". */
 function ResourceBreakdown({ telemetry }: { telemetry: string | null }) {
   const comps = parseComponents(telemetry);
   const vlm = parseVlm(telemetry);
+  const vram = parseVram(telemetry);
   if ((!comps || comps.length === 0) && !vlm) return null;
+  const vlmVram = vlm?.loaded ? (vlm.vram_mb ?? 0) : 0;
+  // Per-process VRAM is N/A on WDDM; on this single-GPU box the only CUDA users are
+  // sentry-ai (YOLO + torch) and the VLM, so YOLO ≈ device VRAM − the VLM's VRAM.
+  const sentryVram = vram.used != null ? Math.max(0, vram.used - vlmVram) : null;
   return (
     <div className="mb-4 flex flex-col gap-2">
       <div className="text-sm text-[var(--color-muted-foreground)]">
         Бүрэлдэхүүн тус бүрийн ачаалал
       </div>
+      {vram.used != null && (
+        <div
+          className="flex items-center justify-between rounded-md px-3 py-2 text-sm"
+          style={{ background: "var(--color-background-secondary)" }}
+        >
+          <span>GPU нийт (бүх төхөөрөмж)</span>
+          <span className="text-[var(--color-muted-foreground)]">
+            {vram.gpu ?? 0}% · VRAM {(vram.used / 1024).toFixed(1)}/
+            {((vram.total ?? 8192) / 1024).toFixed(1)} GB
+          </span>
+        </div>
+      )}
       {vlm && (
         <div
           className="flex items-center justify-between rounded-md px-3 py-2 text-sm"
@@ -236,12 +263,18 @@ function ResourceBreakdown({ telemetry }: { telemetry: string | null }) {
           <span className="text-[var(--color-muted-foreground)]">
             CPU {Math.round(c.cpu_pct ?? 0)}% · RAM{" "}
             {((c.ram_mb ?? 0) / 1024).toFixed(c.ram_mb && c.ram_mb >= 1024 ? 1 : 2)} GB
+            {c.name === "sentry-ai" && sentryVram != null
+              ? ` · VRAM ~${(sentryVram / 1024).toFixed(1)} GB (YOLO)`
+              : c.name === "MediaMTX" || c.name === "Tunnel"
+                ? " · GPU үгүй"
+                : ""}
           </span>
         </div>
       ))}
       <div className="text-xs text-[var(--color-muted-foreground)]">
-        VRAM-ыг процесс тусад нь NVML гаргадаггүй (WDDM) — VLM-ийн GPU дээрх хэмжээ нь
-        Ollama-аас, бусад нь зөвхөн CPU/RAM.
+        GPU ачаалал (%) бол бүх төхөөрөмжийнх — WDDM дээр процесс тусад нь NVML гаргадаггүй.
+        VLM-ийн VRAM нь Ollama-аас (нарийвчлалтай); sentry-ai/YOLO-гийнх нь нийт VRAM-аас
+        VLM-ийг хассан ойролцоо тооцоо; MediaMTX/Tunnel GPU хэрэглэхгүй.
       </div>
     </div>
   );
