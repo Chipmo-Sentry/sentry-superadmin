@@ -171,6 +171,82 @@ function ProviderSyncBadge({ desired, status }: { desired: string; status: Provi
   );
 }
 
+interface ComponentUsage {
+  name: string;
+  cpu_pct: number | null;
+  ram_mb: number | null;
+}
+interface VlmStatus {
+  loaded: boolean;
+  model: string | null;
+  vram_mb: number | null;
+  gpu_pct: number | null;
+}
+
+function parseComponents(raw: string | null): ComponentUsage[] | null {
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as { components?: unknown };
+    return Array.isArray(t.components) ? (t.components as ComponentUsage[]) : null;
+  } catch {
+    return null;
+  }
+}
+function parseVlm(raw: string | null): VlmStatus | null {
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as { vlm?: unknown };
+    return t.vlm && typeof t.vlm === "object" ? (t.vlm as VlmStatus) : null;
+  } catch {
+    return null;
+  }
+}
+
+/** Per-component CPU/RAM + VLM GPU residency, shown in the expanded panel. Answers
+ * "what's actually using CPU/GPU/RAM/VRAM on this node". */
+function ResourceBreakdown({ telemetry }: { telemetry: string | null }) {
+  const comps = parseComponents(telemetry);
+  const vlm = parseVlm(telemetry);
+  if ((!comps || comps.length === 0) && !vlm) return null;
+  return (
+    <div className="mb-4 flex flex-col gap-2">
+      <div className="text-sm text-[var(--color-muted-foreground)]">
+        Бүрэлдэхүүн тус бүрийн ачаалал
+      </div>
+      {vlm && (
+        <div
+          className="flex items-center justify-between rounded-md px-3 py-2 text-sm"
+          style={{ background: "var(--color-background-secondary)" }}
+        >
+          <span>VLM (GPU дээр)</span>
+          <span style={{ color: vlm.loaded ? "var(--color-success)" : "var(--color-muted-foreground)" }}>
+            {vlm.loaded
+              ? `${vlm.model} · ${((vlm.vram_mb ?? 0) / 1024).toFixed(1)} GB · ${vlm.gpu_pct ?? 0}% GPU`
+              : "ачаалаагүй (зөрчилд л ачаалагдана)"}
+          </span>
+        </div>
+      )}
+      {comps?.map((c) => (
+        <div
+          key={c.name}
+          className="flex items-center justify-between rounded-md px-3 py-2 text-sm"
+          style={{ background: "var(--color-background-secondary)" }}
+        >
+          <span>{c.name}</span>
+          <span className="text-[var(--color-muted-foreground)]">
+            CPU {Math.round(c.cpu_pct ?? 0)}% · RAM{" "}
+            {((c.ram_mb ?? 0) / 1024).toFixed(c.ram_mb && c.ram_mb >= 1024 ? 1 : 2)} GB
+          </span>
+        </div>
+      ))}
+      <div className="text-xs text-[var(--color-muted-foreground)]">
+        VRAM-ыг процесс тусад нь NVML гаргадаггүй (WDDM) — VLM-ийн GPU дээрх хэмжээ нь
+        Ollama-аас, бусад нь зөвхөн CPU/RAM.
+      </div>
+    </div>
+  );
+}
+
 const HEALTH_ORDER = ["ai", "ollama", "ingest", "tunnel"];
 const HEALTH_LABELS: Record<string, string> = {
   ai: "AI",
@@ -375,6 +451,7 @@ export function AiNodesPage() {
                   {expanded === n.id && (
                     <TableRow>
                       <TableCell colSpan={6}>
+                        <ResourceBreakdown telemetry={n.telemetry} />
                         <NodeMetricsChart nodeId={n.id} />
                       </TableCell>
                     </TableRow>
