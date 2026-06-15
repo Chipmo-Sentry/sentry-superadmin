@@ -23,6 +23,7 @@ import type {
   TopupRequest,
   DimensionCreate,
   DimensionUpdate,
+  EventLogPublic,
   LeadPublic,
   LeadUpdate,
   LoginResponse,
@@ -180,6 +181,38 @@ export const admin = {
     request<FeedbackAnalytics>(
       `/api/v1/admin/analytics/feedback?range=${encodeURIComponent(range)}`,
     ),
+};
+
+// === Event / activity log (platform-wide; super-admin sees every org) ===
+
+export interface EventListParams {
+  org_id?: string;
+  event_type?: string[];
+  severity?: string[];
+  include_heartbeats?: boolean;
+  before?: string; // ISO datetime cursor (created_at <)
+  limit?: number;
+  offset?: number;
+}
+
+function eventQuery(params?: EventListParams): string {
+  const q = new URLSearchParams();
+  if (params?.org_id) q.set("org_id", params.org_id);
+  params?.event_type?.forEach((t) => q.append("event_type", t));
+  params?.severity?.forEach((s) => q.append("severity", s));
+  if (params?.include_heartbeats) q.set("include_heartbeats", "true");
+  if (params?.before) q.set("before", params.before);
+  if (params?.limit !== undefined) q.set("limit", String(params.limit));
+  if (params?.offset !== undefined) q.set("offset", String(params.offset));
+  return q.toString() ? `?${q}` : "";
+}
+
+export const events = {
+  list: (params?: EventListParams) =>
+    request<EventLogPublic[]>(`/api/v1/admin/events${eventQuery(params)}`),
+  /** SSE endpoint — open with `new EventSource(url, { withCredentials: true })`
+   * and listen for the `log` event. */
+  streamUrl: () => `${BASE}/api/v1/admin/events/stream`,
 };
 
 /** Feedback-loop breakdown + tuning suggestions (docs/19 Phase 3). */

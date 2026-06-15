@@ -7,6 +7,7 @@ import { AiNodesPage } from "@/pages/AiNodesPage";
 import { BillingPage } from "@/pages/BillingPage";
 import { DashboardPage } from "@/pages/DashboardPage";
 import { LeadsPage } from "@/pages/LeadsPage";
+import { LogsPage } from "@/pages/LogsPage";
 import { LoginPage } from "@/pages/LoginPage";
 import { OrgDetailPage } from "@/pages/OrgDetailPage";
 import { OrgsPage } from "@/pages/OrgsPage";
@@ -26,6 +27,7 @@ export function App() {
           <Route path="billing" element={<BillingPage />} />
           <Route path="ai-nodes" element={<AiNodesPage />} />
           <Route path="behaviors" element={<BehaviorsPage />} />
+          <Route path="logs" element={<LogsPage />} />
         </Route>
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />

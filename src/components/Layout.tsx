@@ -6,6 +6,7 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
+  ScrollText,
   Users,
   Wallet,
 } from "lucide-react";
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/billing", label: "Төлбөр", icon: Wallet, end: false },
   { to: "/ai-nodes", label: "AI сервер", icon: Cpu, end: false },
   { to: "/behaviors", label: "Сэжиг шалгуур", icon: Brain, end: false },
+  { to: "/logs", label: "Лог", icon: ScrollText, end: false },
 ] as const;
 
 export function Layout() {

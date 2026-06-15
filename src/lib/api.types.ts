@@ -47,7 +47,13 @@ export interface paths {
         };
         get?: never;
         put?: never;
-        /** Logout */
+        /**
+         * Logout
+         * @description Clear this device's cookies AND server-side revoke every outstanding
+         *     token for the user by bumping ``token_version``. Best-effort on the bump:
+         *     a missing/expired/invalid token still clears cookies (idempotent logout),
+         *     it just can't invalidate other devices.
+         */
         post: operations["logout_api_v1_auth_logout_post"];
         delete?: never;
         options?: never;
@@ -540,7 +546,14 @@ export interface paths {
         get: operations["get_org_api_v1_admin_orgs__org_id__get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete Org
+         * @description Delete a tenant entirely (T15 #3 — the privacy policy's deletion promise).
+         *
+         *     Every org-scoped row cascades in the DB; the org's clip evidence FILES are
+         *     unlinked from disk first (a cascade can't reach the filesystem).
+         */
+        delete: operations["delete_org_api_v1_admin_orgs__org_id__delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -723,6 +736,196 @@ export interface paths {
         patch: operations["update_ai_node_api_v1_admin_ai_nodes__node_id__patch"];
         trace?: never;
     };
+    "/api/v1/billing": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Billing
+         * @description Wallet balance + status + the per-store rate breakdown.
+         */
+        get: operations["get_billing_api_v1_billing_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Journal
+         * @description Ledger entries for the org, newest first.
+         */
+        get: operations["list_journal_api_v1_billing_journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/billing/promo": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Redeem Promo
+         * @description Redeem a promo code (owner/admin only).
+         */
+        post: operations["redeem_promo_api_v1_billing_promo_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/overview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Billing Overview */
+        get: operations["billing_overview_api_v1_admin_billing_overview_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/orgs/{org_id}/journal": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Org Journal */
+        get: operations["org_journal_api_v1_admin_billing_orgs__org_id__journal_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/orgs/{org_id}/topup": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Topup
+         * @description Record a received payment: Dr cash / Cr org_wallet, balance += amount.
+         */
+        post: operations["topup_api_v1_admin_billing_orgs__org_id__topup_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/orgs/{org_id}/credit": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Grant Credit
+         * @description Emergency unlock: keep a non-paying org alive until `until`.
+         */
+        post: operations["grant_credit_api_v1_admin_billing_orgs__org_id__credit_post"];
+        /** Revoke Credit */
+        delete: operations["revoke_credit_api_v1_admin_billing_orgs__org_id__credit_delete"];
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/promo-codes": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Promo Codes */
+        get: operations["list_promo_codes_api_v1_admin_billing_promo_codes_get"];
+        put?: never;
+        /** Create Promo Code */
+        post: operations["create_promo_code_api_v1_admin_billing_promo_codes_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/billing/promo-codes/{promo_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Update Promo Code */
+        patch: operations["update_promo_code_api_v1_admin_billing_promo_codes__promo_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/admin/billing/analytics": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Billing Analytics
+         * @description Daily money flow (usage / topup / promo) for the superadmin chart.
+         */
+        get: operations["billing_analytics_api_v1_admin_billing_analytics_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/org/members": {
         parameters: {
             query?: never;
@@ -738,6 +941,32 @@ export interface paths {
         put?: never;
         post?: never;
         delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/org": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        /**
+         * Delete My Org
+         * @description Owner deletes their own organization (T15 #3 — privacy policy promise).
+         *
+         *     Owner-only (admins manage the team; only the owner can erase the tenant).
+         *     The caller must retype the org slug (`confirm_slug`) so a stray DELETE can't
+         *     wipe everything. All org data cascades in the DB; clip evidence files are
+         *     removed from disk first. Members keep their user accounts but lose all
+         *     org-scoped access the moment the membership rows cascade away.
+         */
+        delete: operations["delete_my_org_api_v1_org_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -927,7 +1156,16 @@ export interface paths {
         delete: operations["agent_delete_camera_api_v1_agent_cameras__camera_id__delete"];
         options?: never;
         head?: never;
-        patch?: never;
+        /**
+         * Agent Update Camera
+         * @description Edit a camera's connection (rtsp_url), display name, or risk threshold.
+         *
+         *     Used by the desktop agent's 'Засах' (edit) flow when a camera's IP or
+         *     credentials change — so the user can fix the connection without delete +
+         *     re-add (which would churn the UUID + mediamtx_path). When the rtsp_url
+         *     changes we re-provision the live worker so the AI pulls the new source.
+         */
+        patch: operations["agent_update_camera_api_v1_agent_cameras__camera_id__patch"];
         trace?: never;
     };
     "/api/v1/agent/stream-config": {
@@ -1081,6 +1319,74 @@ export interface paths {
         patch: operations["update_dimension_api_v1_behaviors_dimensions__key__patch"];
         trace?: never;
     };
+    "/api/v1/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Org Events */
+        get: operations["list_org_events_api_v1_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream Org Events */
+        get: operations["stream_org_events_api_v1_events_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/events": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Admin Events */
+        get: operations["list_admin_events_api_v1_admin_events_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/admin/events/stream": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Stream Admin Events */
+        get: operations["stream_admin_events_api_v1_admin_events_stream_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1145,9 +1451,25 @@ export interface components {
             mediamtx_path?: string | null;
             /**
              * Risk Threshold
-             * @default 70
+             * @default 50
              */
             risk_threshold: number;
+        };
+        /**
+         * AgentCameraUpdate
+         * @description Partial camera update from a paired agent (edit connection / settings).
+         *
+         *     All fields optional — only the provided ones change. mediamtx_path is NOT
+         *     editable here: it is the stream identity the live pipeline keys on, so the
+         *     agent edits the connection (rtsp_url) and name, never the path.
+         */
+        AgentCameraUpdate: {
+            /** Name */
+            name?: string | null;
+            /** Rtsp Url */
+            rtsp_url?: string | null;
+            /** Risk Threshold */
+            risk_threshold?: number | null;
         };
         /** AgentPairRequest */
         AgentPairRequest: {
@@ -1274,6 +1596,17 @@ export interface components {
             sentry_ram_mb?: number | null;
             /** Sentry Vram Mb */
             sentry_vram_mb?: number | null;
+            /** Cameras */
+            cameras?: components["schemas"]["CameraHealth"][] | null;
+            /** Components */
+            components?: components["schemas"]["ComponentUsage"][] | null;
+            vlm?: components["schemas"]["VlmStatus"] | null;
+            /** Provider Effective */
+            provider_effective?: string | null;
+            /** Provider Ready */
+            provider_ready?: boolean | null;
+            /** Provider Error */
+            provider_error?: string | null;
         };
         /**
          * AiNodePairRequest
@@ -1345,6 +1678,26 @@ export interface components {
             frame_skip: number;
             /** Created At */
             created_at: string | null;
+            /**
+             * Cameras
+             * @description Per-camera stream health parsed from the latest heartbeat telemetry
+             *     (audit T12 #3). None for old node versions / no telemetry yet — the
+             *     superadmin UI can distinguish "unknown" from "no cameras" ([]).
+             */
+            readonly cameras: components["schemas"]["CameraHealth"][] | null;
+            /**
+             * Provider Effective
+             * @description VLM provider the node actually runs (from its last heartbeat). The UI
+             *     compares this to `provider` (desired) to show applied vs applying.
+             */
+            readonly provider_effective: string | null;
+            /** Provider Ready */
+            readonly provider_ready: boolean | null;
+            /**
+             * Provider Error
+             * @description Why the effective provider isn't ready (e.g. model not pulled), or None.
+             */
+            readonly provider_error: string | null;
             /**
              * Is Online
              * @description Server-computed online status — independent of the viewer's clock.
@@ -1437,6 +1790,13 @@ export interface components {
             person_id?: number | null;
             /** Peak Risk Pct */
             peak_risk_pct?: number | null;
+            /** Triggered Behaviors */
+            triggered_behaviors?: string[] | null;
+            /** Triggered Sequences */
+            triggered_sequences?: string[] | null;
+            /** Triggered Behavior Detail */
+            triggered_behavior_detail?: components["schemas"]["BehaviorDetailItem"][] | null;
+            feedback_verdict?: components["schemas"]["FeedbackVerdict"] | null;
         };
         /**
          * AlertTrigger
@@ -1505,6 +1865,18 @@ export interface components {
                 [key: string]: number;
             } | null;
         };
+        /**
+         * BehaviorDetailItem
+         * @description One row of the alert's behaviour timeline (first-fired order).
+         */
+        BehaviorDetailItem: {
+            /** Key */
+            key: string;
+            /** Offset Sec */
+            offset_sec: number;
+            /** Score */
+            score: number;
+        };
         /** BehaviorDimension */
         BehaviorDimension: {
             /** Key */
@@ -1543,6 +1915,63 @@ export interface components {
             params: {
                 [key: string]: number;
             };
+        };
+        /** BillingAnalytics */
+        BillingAnalytics: {
+            /** By Day */
+            by_day: components["schemas"]["BillingDayPoint"][];
+            totals: components["schemas"]["BillingDayPoint"];
+            /** Suspended Count */
+            suspended_count: number;
+            /** Credit Count */
+            credit_count: number;
+        };
+        /** BillingDayPoint */
+        BillingDayPoint: {
+            /** Day */
+            day: string;
+            /** Usage Mnt */
+            usage_mnt: number;
+            /** Topup Mnt */
+            topup_mnt: number;
+            /** Promo Mnt */
+            promo_mnt: number;
+        };
+        /** BillingOverview */
+        BillingOverview: {
+            /** Orgs */
+            orgs: components["schemas"]["OrgBillingRow"][];
+            /** Total Balance Mnt */
+            total_balance_mnt: number;
+            /** Total Daily Rate Mnt */
+            total_daily_rate_mnt: number;
+            /** Active Count */
+            active_count: number;
+            /** Credit Count */
+            credit_count: number;
+            /** Suspended Count */
+            suspended_count: number;
+        };
+        /**
+         * BillingStatus
+         * @enum {string}
+         */
+        BillingStatus: "active" | "credit" | "suspended";
+        /** BillingSummary */
+        BillingSummary: {
+            /** Balance Mnt */
+            balance_mnt: number;
+            status: components["schemas"]["BillingStatus"];
+            /** Credit Until */
+            credit_until: string | null;
+            /** Promo Free Until */
+            promo_free_until: string | null;
+            /** Daily Rate Mnt */
+            daily_rate_mnt: number;
+            /** Monthly Rate Mnt */
+            monthly_rate_mnt: number;
+            /** Stores */
+            stores: components["schemas"]["StoreBillingLine"][];
         };
         /** Body_upload_clip_api_v1_clips_post */
         Body_upload_clip_api_v1_clips_post: {
@@ -1595,9 +2024,29 @@ export interface components {
             mediamtx_path?: string | null;
             /**
              * Risk Threshold
-             * @default 70
+             * @default 50
              */
             risk_threshold: number;
+        };
+        /**
+         * CameraHealth
+         * @description Per-camera stream health inside the node heartbeat (audit T12 #3).
+         *
+         *     Lets the cloud tell WHICH camera died instead of only seeing the summed
+         *     FPS dip. status: ok = inferring, stalled = worker alive but 0 FPS,
+         *     error = worker dead or RTSP read/open failure.
+         */
+        CameraHealth: {
+            /** Camera Id */
+            camera_id: string;
+            /** Fps */
+            fps?: number | null;
+            /**
+             * Status
+             * @default ok
+             * @enum {string}
+             */
+            status: "ok" | "stalled" | "error";
         };
         /**
          * CameraPublic
@@ -1635,7 +2084,7 @@ export interface components {
             mediamtx_path?: string | null;
             /**
              * Risk Threshold
-             * @default 70
+             * @default 50
              */
             risk_threshold: number;
         };
@@ -1695,6 +2144,31 @@ export interface components {
              * Format: date-time
              */
             created_at: string;
+            /** File Deleted At */
+            file_deleted_at?: string | null;
+        };
+        /**
+         * ComponentUsage
+         * @description Per-component CPU/RAM (sentry-ai / Ollama / MediaMTX / Tunnel) — the
+         *     resource breakdown shown in the dashboard. Stored in telemetry JSON.
+         */
+        ComponentUsage: {
+            /** Name */
+            name: string;
+            /** Cpu Pct */
+            cpu_pct?: number | null;
+            /** Ram Mb */
+            ram_mb?: number | null;
+        };
+        /** CreditRequest */
+        CreditRequest: {
+            /**
+             * Until
+             * Format: date-time
+             */
+            until: string;
+            /** Note */
+            note?: string | null;
         };
         /** DimensionCreate */
         DimensionCreate: {
@@ -1742,6 +2216,56 @@ export interface components {
                 [key: string]: number;
             } | null;
         };
+        /** EventLogPublic */
+        EventLogPublic: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Organization Id */
+            organization_id: string | null;
+            event_type: components["schemas"]["EventType"];
+            severity: components["schemas"]["EventSeverity"];
+            /** Message */
+            message: string;
+            /** Actor User Id */
+            actor_user_id?: string | null;
+            /** Actor Label */
+            actor_label?: string | null;
+            /** Store Id */
+            store_id?: string | null;
+            /** Camera Id */
+            camera_id?: string | null;
+            /** Agent Id */
+            agent_id?: string | null;
+            /** Ai Node Id */
+            ai_node_id?: string | null;
+            /** Detail */
+            detail?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Is Heartbeat
+             * @default false
+             */
+            is_heartbeat: boolean;
+        };
+        /**
+         * EventSeverity
+         * @enum {string}
+         */
+        EventSeverity: "info" | "success" | "warning" | "error" | "critical";
+        /**
+         * EventType
+         * @enum {string}
+         */
+        EventType: "user_login" | "user_logout" | "user_invited" | "invite_accepted" | "member_role_changed" | "member_access_changed" | "org_created" | "org_deleted" | "camera_registered" | "camera_updated" | "camera_stream_down" | "camera_stream_recovered" | "agent_paired" | "agent_online" | "agent_offline" | "agent_heartbeat" | "node_paired" | "node_online" | "node_offline" | "node_heartbeat" | "alert_created" | "error";
         /** FeedbackCreate */
         FeedbackCreate: {
             /**
@@ -1826,6 +2350,37 @@ export interface components {
              */
             expires_at: string;
         };
+        /** JournalEntryPublic */
+        JournalEntryPublic: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Posted At
+             * Format: date-time
+             */
+            posted_at: string;
+            kind: components["schemas"]["JournalKind"];
+            dr_account: components["schemas"]["LedgerAccount"];
+            cr_account: components["schemas"]["LedgerAccount"];
+            /** Amount Mnt */
+            amount_mnt: number;
+            /** Description */
+            description: string;
+            /** Charge Date */
+            charge_date?: string | null;
+            /** Meta */
+            meta?: {
+                [key: string]: unknown;
+            } | null;
+        };
+        /**
+         * JournalKind
+         * @enum {string}
+         */
+        JournalKind: "topup" | "usage_charge" | "promo_credit" | "adjustment";
         /**
          * LeadCreate
          * @description Public landing-page submission.
@@ -1902,6 +2457,11 @@ export interface components {
             notes?: string | null;
         };
         /**
+         * LedgerAccount
+         * @enum {string}
+         */
+        LedgerAccount: "cash" | "org_wallet" | "revenue" | "promo_expense";
+        /**
          * LiveFrame
          * @description Per-analyzed-frame metadata from the sentry-ai live worker
          *     (REV.1 — mirrors sentry-ai's FrameMetadata).
@@ -1977,6 +2537,36 @@ export interface components {
              * @enum {string}
              */
             color: "green" | "yellow" | "red";
+            /**
+             * Level
+             * @default LOW
+             */
+            level: string;
+            /**
+             * State
+             * @default IDLE
+             */
+            state: string;
+            /** Sequences */
+            sequences?: string[];
+            /** Behaviors */
+            behaviors?: string[];
+            /** Behavior Scores */
+            behavior_scores?: {
+                [key: string]: number;
+            };
+            /** Behavior Offsets */
+            behavior_offsets?: {
+                [key: string]: number;
+            };
+            /** Reasons */
+            reasons?: string[];
+            /** Episode Started Ms */
+            episode_started_ms?: number | null;
+            /** Store Person Id */
+            store_person_id?: number | null;
+            /** Store Risk Pct */
+            store_risk_pct?: number | null;
         };
         /** LoginRequest */
         LoginRequest: {
@@ -2031,6 +2621,44 @@ export interface components {
         MemberUpdate: {
             /** Is Active */
             is_active: boolean;
+        };
+        /** OrgBillingRow */
+        OrgBillingRow: {
+            /**
+             * Org Id
+             * Format: uuid
+             */
+            org_id: string;
+            /** Name */
+            name: string;
+            /** Slug */
+            slug: string;
+            /** Balance Mnt */
+            balance_mnt: number;
+            status: components["schemas"]["BillingStatus"];
+            /** Daily Rate Mnt */
+            daily_rate_mnt: number;
+            /** Stores Count */
+            stores_count: number;
+            /** Cameras Count */
+            cameras_count: number;
+            /** Credit Until */
+            credit_until?: string | null;
+            /** Promo Free Until */
+            promo_free_until?: string | null;
+            /** Last Topup At */
+            last_topup_at?: string | null;
+        };
+        /**
+         * OrgDeleteConfirm
+         * @description Owner deletes their own org — must retype the org slug to confirm.
+         *
+         *     Guards against an accidental DELETE (fat-finger, replayed request) wiping a
+         *     whole tenant: the slug is something only a deliberate caller types in.
+         */
+        OrgDeleteConfirm: {
+            /** Confirm Slug */
+            confirm_slug: string;
         };
         /**
          * OrgMemberPublic
@@ -2109,6 +2737,89 @@ export interface components {
             created_at: string;
         };
         /**
+         * PromoCodeCreate
+         * @description code omitted/blank → auto-generated (8 chars A-Z0-9).
+         */
+        PromoCodeCreate: {
+            /** Code */
+            code?: string | null;
+            kind: components["schemas"]["PromoKind"];
+            /** Amount Mnt */
+            amount_mnt?: number | null;
+            /** Free Days */
+            free_days?: number | null;
+            /** Valid Until */
+            valid_until?: string | null;
+            /**
+             * Max Redemptions
+             * @default 1
+             */
+            max_redemptions: number;
+            /** Note */
+            note?: string | null;
+        };
+        /** PromoCodePublic */
+        PromoCodePublic: {
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Code */
+            code: string;
+            kind: components["schemas"]["PromoKind"];
+            /** Amount Mnt */
+            amount_mnt: number | null;
+            /** Free Days */
+            free_days: number | null;
+            /** Valid Until */
+            valid_until: string | null;
+            /** Max Redemptions */
+            max_redemptions: number;
+            /** Redeemed Count */
+            redeemed_count: number;
+            /** Active */
+            active: boolean;
+            /** Note */
+            note: string | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+        };
+        /** PromoCodeUpdate */
+        PromoCodeUpdate: {
+            /** Active */
+            active?: boolean | null;
+            /** Note */
+            note?: string | null;
+        };
+        /**
+         * PromoKind
+         * @enum {string}
+         */
+        PromoKind: "bonus_amount" | "free_days";
+        /** PromoRedeemRequest */
+        PromoRedeemRequest: {
+            /** Code */
+            code: string;
+        };
+        /** PromoRedeemResponse */
+        PromoRedeemResponse: {
+            /** Code */
+            code: string;
+            kind: components["schemas"]["PromoKind"];
+            /** Amount Mnt */
+            amount_mnt?: number | null;
+            /** Free Days */
+            free_days?: number | null;
+            /** Balance Mnt */
+            balance_mnt: number;
+            /** Promo Free Until */
+            promo_free_until?: string | null;
+        };
+        /**
          * RagCaseCreate
          * @description Store a verified event the AI node has embedded.
          */
@@ -2158,6 +2869,29 @@ export interface components {
             pattern: string[];
             /** Bonus */
             bonus: number;
+        };
+        /**
+         * StoreBillingLine
+         * @description Per-store breakdown shown on the customer billing page.
+         */
+        StoreBillingLine: {
+            /**
+             * Store Id
+             * Format: uuid
+             */
+            store_id: string;
+            /** Name */
+            name: string;
+            /** Active Cameras */
+            active_cameras: number;
+            /** Tier */
+            tier: string | null;
+            /** Platform Fee Mnt */
+            platform_fee_mnt: number;
+            /** Camera Fee Mnt */
+            camera_fee_mnt: number;
+            /** Monthly Mnt */
+            monthly_mnt: number;
         };
         /** StoreCreate */
         StoreCreate: {
@@ -2219,6 +2953,13 @@ export interface components {
             token: string;
             /** Expires In */
             expires_in: number;
+        };
+        /** TopupRequest */
+        TopupRequest: {
+            /** Amount Mnt */
+            amount_mnt: number;
+            /** Note */
+            note?: string | null;
         };
         /**
          * UserAdminUpdate
@@ -2283,6 +3024,21 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VlmStatus
+         * @description Whether a VLM model is resident in Ollama + its GPU split, so the dashboard
+         *     can show the VLM's real GPU/VRAM footprint (per-process VRAM isn't on WDDM).
+         */
+        VlmStatus: {
+            /** Loaded */
+            loaded: boolean;
+            /** Model */
+            model?: string | null;
+            /** Vram Mb */
+            vram_mb?: number | null;
+            /** Gpu Pct */
+            gpu_pct?: number | null;
         };
     };
     responses: never;
@@ -2351,9 +3107,13 @@ export interface operations {
     logout_api_v1_auth_logout_post: {
         parameters: {
             query?: never;
-            header?: never;
+            header?: {
+                authorization?: string | null;
+            };
             path?: never;
-            cookie?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
         };
         requestBody?: never;
         responses: {
@@ -2363,6 +3123,15 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
             };
         };
     };
@@ -3549,6 +4318,39 @@ export interface operations {
             };
         };
     };
+    delete_org_api_v1_admin_orgs__org_id__delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_org_members_api_v1_admin_orgs__org_id__members_get: {
         parameters: {
             query?: never;
@@ -3946,6 +4748,439 @@ export interface operations {
             };
         };
     };
+    get_billing_api_v1_billing_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_journal_api_v1_billing_journal_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    redeem_promo_api_v1_billing_promo_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoRedeemRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoRedeemResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_overview_api_v1_admin_billing_overview_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingOverview"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    org_journal_api_v1_admin_billing_orgs__org_id__journal_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    topup_api_v1_admin_billing_orgs__org_id__topup_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["TopupRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["JournalEntryPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    grant_credit_api_v1_admin_billing_orgs__org_id__credit_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CreditRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    revoke_credit_api_v1_admin_billing_orgs__org_id__credit_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                org_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_promo_codes_api_v1_admin_billing_promo_codes_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodePublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_promo_code_api_v1_admin_billing_promo_codes_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoCodeCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_promo_code_api_v1_admin_billing_promo_codes__promo_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                promo_id: string;
+            };
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PromoCodeUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["PromoCodePublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    billing_analytics_api_v1_admin_billing_analytics_get: {
+        parameters: {
+            query?: {
+                range?: string;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BillingAnalytics"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_members_api_v1_org_members_get: {
         parameters: {
             query?: never;
@@ -3968,6 +5203,42 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["OrgMemberPublic"][];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_my_org_api_v1_org_delete: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["OrgDeleteConfirm"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
@@ -4426,6 +5697,43 @@ export interface operations {
             };
         };
     };
+    agent_update_camera_api_v1_agent_cameras__camera_id__patch: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path: {
+                camera_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AgentCameraUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CameraPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     agent_stream_config_api_v1_agent_stream_config_get: {
         parameters: {
             query?: never;
@@ -4740,6 +6048,155 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["BehaviorConfig"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_org_events_api_v1_events_get: {
+        parameters: {
+            query?: {
+                event_type?: components["schemas"]["EventType"][] | null;
+                severity?: components["schemas"]["EventSeverity"][] | null;
+                include_heartbeats?: boolean;
+                before?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventLogPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_org_events_api_v1_events_stream_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                "X-Org-Id"?: string | null;
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_admin_events_api_v1_admin_events_get: {
+        parameters: {
+            query?: {
+                org_id?: string | null;
+                event_type?: components["schemas"]["EventType"][] | null;
+                severity?: components["schemas"]["EventSeverity"][] | null;
+                include_heartbeats?: boolean;
+                before?: string | null;
+                limit?: number;
+                offset?: number;
+            };
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EventLogPublic"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    stream_admin_events_api_v1_admin_events_stream_get: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: {
+                sentry_access?: string | null;
+            };
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": unknown;
                 };
             };
             /** @description Validation Error */

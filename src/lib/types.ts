@@ -29,6 +29,11 @@ export type BehaviorDimension = Schemas["BehaviorDimension"];
 export type DimensionCreate = Schemas["DimensionCreate"];
 export type DimensionUpdate = Schemas["DimensionUpdate"];
 
+// === Event / activity log ===
+export type EventLogPublic = Schemas["EventLogPublic"];
+export type EventType = Schemas["EventType"];
+export type EventSeverity = Schemas["EventSeverity"];
+
 // === Leads (public landing demo requests) ===
 export type LeadPublic = Schemas["LeadPublic"];
 export type LeadStatus = Schemas["LeadStatus"];

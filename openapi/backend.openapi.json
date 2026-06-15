@@ -74,10 +74,55 @@
           "auth"
         ],
         "summary": "Logout",
+        "description": "Clear this device's cookies AND server-side revoke every outstanding\ntoken for the user by bumping ``token_version``. Best-effort on the bump:\na missing/expired/invalid token still clears cookies (idempotent logout),\nit just can't invalidate other devices.",
         "operationId": "logout_api_v1_auth_logout_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
         "responses": {
           "204": {
             "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
           }
         }
       }
@@ -2804,6 +2849,73 @@
             }
           }
         }
+      },
+      "delete": {
+        "tags": [
+          "admin"
+        ],
+        "summary": "Delete Org",
+        "description": "Delete a tenant entirely (T15 #3 — the privacy policy's deletion promise).\n\nEvery org-scoped row cascades in the DB; the org's clip evidence FILES are\nunlinked from disk first (a cascade can't reach the filesystem).",
+        "operationId": "delete_org_api_v1_admin_orgs__org_id__delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
       }
     },
     "/api/v1/admin/orgs/{org_id}/members": {
@@ -3674,6 +3786,990 @@
         }
       }
     },
+    "/api/v1/billing": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Get Billing",
+        "description": "Wallet balance + status + the per-store rate breakdown.",
+        "operationId": "get_billing_api_v1_billing_get",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingSummary"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/journal": {
+      "get": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "List Journal",
+        "description": "Ledger entries for the org, newest first.",
+        "operationId": "list_journal_api_v1_billing_journal_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalEntryPublic"
+                  },
+                  "title": "Response List Journal Api V1 Billing Journal Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/billing/promo": {
+      "post": {
+        "tags": [
+          "billing"
+        ],
+        "summary": "Redeem Promo",
+        "description": "Redeem a promo code (owner/admin only).",
+        "operationId": "redeem_promo_api_v1_billing_promo_post",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoRedeemRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoRedeemResponse"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/overview": {
+      "get": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Billing Overview",
+        "operationId": "billing_overview_api_v1_admin_billing_overview_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingOverview"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/orgs/{org_id}/journal": {
+      "get": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Org Journal",
+        "operationId": "org_journal_api_v1_admin_billing_orgs__org_id__journal_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 200,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/JournalEntryPublic"
+                  },
+                  "title": "Response Org Journal Api V1 Admin Billing Orgs  Org Id  Journal Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/orgs/{org_id}/topup": {
+      "post": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Topup",
+        "description": "Record a received payment: Dr cash / Cr org_wallet, balance += amount.",
+        "operationId": "topup_api_v1_admin_billing_orgs__org_id__topup_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/TopupRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JournalEntryPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/orgs/{org_id}/credit": {
+      "post": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Grant Credit",
+        "description": "Emergency unlock: keep a non-paying org alive until `until`.",
+        "operationId": "grant_credit_api_v1_admin_billing_orgs__org_id__credit_post",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/CreditRequest"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Revoke Credit",
+        "operationId": "revoke_credit_api_v1_admin_billing_orgs__org_id__credit_delete",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/promo-codes": {
+      "get": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "List Promo Codes",
+        "operationId": "list_promo_codes_api_v1_admin_billing_promo_codes_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PromoCodePublic"
+                  },
+                  "title": "Response List Promo Codes Api V1 Admin Billing Promo Codes Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Create Promo Code",
+        "operationId": "create_promo_code_api_v1_admin_billing_promo_codes_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoCodeCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCodePublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/promo-codes/{promo_id}": {
+      "patch": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Update Promo Code",
+        "operationId": "update_promo_code_api_v1_admin_billing_promo_codes__promo_id__patch",
+        "parameters": [
+          {
+            "name": "promo_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Promo Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/PromoCodeUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PromoCodePublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/billing/analytics": {
+      "get": {
+        "tags": [
+          "admin-billing"
+        ],
+        "summary": "Billing Analytics",
+        "description": "Daily money flow (usage / topup / promo) for the superadmin chart.",
+        "operationId": "billing_analytics_api_v1_admin_billing_analytics_get",
+        "parameters": [
+          {
+            "name": "range",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "30d",
+              "title": "Range"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BillingAnalytics"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/org/members": {
       "get": {
         "tags": [
@@ -3746,6 +4842,91 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/org": {
+      "delete": {
+        "tags": [
+          "org"
+        ],
+        "summary": "Delete My Org",
+        "description": "Owner deletes their own organization (T15 #3 — privacy policy promise).\n\nOwner-only (admins manage the team; only the owner can erase the tenant).\nThe caller must retype the org slug (`confirm_slug`) so a stray DELETE can't\nwipe everything. All org data cascades in the DB; clip evidence files are\nremoved from disk first. Members keep their user accounts but lose all\norg-scoped access the moment the membership rows cascade away.",
+        "operationId": "delete_my_org_api_v1_org_delete",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/OrgDeleteConfirm"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -4620,6 +5801,74 @@
       }
     },
     "/api/v1/agent/cameras/{camera_id}": {
+      "patch": {
+        "tags": [
+          "agents"
+        ],
+        "summary": "Agent Update Camera",
+        "description": "Edit a camera's connection (rtsp_url), display name, or risk threshold.\n\nUsed by the desktop agent's 'Засах' (edit) flow when a camera's IP or\ncredentials change — so the user can fix the connection without delete +\nre-add (which would churn the UUID + mediamtx_path). When the rtsp_url\nchanges we re-provision the live worker so the AI pulls the new source.",
+        "operationId": "agent_update_camera_api_v1_agent_cameras__camera_id__patch",
+        "parameters": [
+          {
+            "name": "camera_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "format": "uuid",
+              "title": "Camera Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AgentCameraUpdate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CameraPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      },
       "delete": {
         "tags": [
           "agents"
@@ -5238,6 +6487,495 @@
           }
         }
       }
+    },
+    "/api/v1/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List Org Events",
+        "operationId": "list_org_events_api_v1_events_get",
+        "parameters": [
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventSeverity"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "include_heartbeats",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Heartbeats"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventLogPublic"
+                  },
+                  "title": "Response List Org Events Api V1 Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/events/stream": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Stream Org Events",
+        "operationId": "stream_org_events_api_v1_events_stream_get",
+        "parameters": [
+          {
+            "name": "X-Org-Id",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "X-Org-Id"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/events": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "List Admin Events",
+        "operationId": "list_admin_events_api_v1_admin_events_get",
+        "parameters": [
+          {
+            "name": "org_id",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "uuid"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Org Id"
+            }
+          },
+          {
+            "name": "event_type",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventType"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Event Type"
+            }
+          },
+          {
+            "name": "severity",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventSeverity"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "name": "include_heartbeats",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "boolean",
+              "default": false,
+              "title": "Include Heartbeats"
+            }
+          },
+          {
+            "name": "before",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "format": "date-time"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Before"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 100,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/EventLogPublic"
+                  },
+                  "title": "Response List Admin Events Api V1 Admin Events Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/admin/events/stream": {
+      "get": {
+        "tags": [
+          "events"
+        ],
+        "summary": "Stream Admin Events",
+        "operationId": "stream_admin_events_api_v1_admin_events_stream_get",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          },
+          {
+            "name": "sentry_access",
+            "in": "cookie",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Sentry Access"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {}
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
     }
   },
   "components": {
@@ -5345,8 +7083,10 @@
           },
           "risk_threshold": {
             "type": "number",
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Risk Threshold",
-            "default": 70.0
+            "default": 50.0
           }
         },
         "type": "object",
@@ -5356,6 +7096,51 @@
         ],
         "title": "AgentCameraCreate",
         "description": "Camera registration payload from a paired agent (store comes from the\nagent's token, not the body)."
+      },
+      "AgentCameraUpdate": {
+        "properties": {
+          "name": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 255,
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Name"
+          },
+          "rtsp_url": {
+            "anyOf": [
+              {
+                "type": "string",
+                "minLength": 1
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Rtsp Url"
+          },
+          "risk_threshold": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Risk Threshold"
+          }
+        },
+        "type": "object",
+        "title": "AgentCameraUpdate",
+        "description": "Partial camera update from a paired agent (edit connection / settings).\n\nAll fields optional — only the provided ones change. mediamtx_path is NOT\neditable here: it is the stream identity the live pipeline keys on, so the\nagent edits the connection (rtsp_url) and name, never the path."
       },
       "AgentPairRequest": {
         "properties": {
@@ -5565,7 +7350,8 @@
           "vram_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5613,7 +7399,9 @@
           "cpu_pct": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5624,7 +7412,8 @@
           "ram_used_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5635,7 +7424,8 @@
           "ram_total_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5646,7 +7436,9 @@
           "gpu_pct": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5657,7 +7449,8 @@
           "vram_used_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5668,7 +7461,8 @@
           "vram_total_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5690,7 +7484,9 @@
           "sentry_cpu_pct": {
             "anyOf": [
               {
-                "type": "number"
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5701,7 +7497,8 @@
           "sentry_ram_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -5712,13 +7509,89 @@
           "sentry_vram_mb": {
             "anyOf": [
               {
-                "type": "integer"
+                "type": "integer",
+                "minimum": 0.0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Sentry Vram Mb"
+          },
+          "cameras": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CameraHealth"
+                },
+                "type": "array",
+                "maxItems": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cameras"
+          },
+          "components": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/ComponentUsage"
+                },
+                "type": "array",
+                "maxItems": 12
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Components"
+          },
+          "vlm": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VlmStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provider_effective": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Effective"
+          },
+          "provider_ready": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Ready"
+          },
+          "provider_error": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 300
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Error"
           }
         },
         "type": "object",
@@ -5954,6 +7827,60 @@
             ],
             "title": "Created At"
           },
+          "cameras": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/CameraHealth"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cameras",
+            "description": "Per-camera stream health parsed from the latest heartbeat telemetry\n(audit T12 #3). None for old node versions / no telemetry yet — the\nsuperadmin UI can distinguish \"unknown\" from \"no cameras\" ([]).",
+            "readOnly": true
+          },
+          "provider_effective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Effective",
+            "description": "VLM provider the node actually runs (from its last heartbeat). The UI\ncompares this to `provider` (desired) to show applied vs applying.",
+            "readOnly": true
+          },
+          "provider_ready": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Ready",
+            "readOnly": true
+          },
+          "provider_error": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Provider Error",
+            "description": "Why the effective provider isn't ready (e.g. model not pulled), or None.",
+            "readOnly": true
+          },
           "is_online": {
             "type": "boolean",
             "title": "Is Online",
@@ -5976,6 +7903,10 @@
           "provider",
           "frame_skip",
           "created_at",
+          "cameras",
+          "provider_effective",
+          "provider_ready",
+          "provider_error",
           "is_online"
         ],
         "title": "AiNodePublic"
@@ -6194,6 +8125,58 @@
               }
             ],
             "title": "Peak Risk Pct"
+          },
+          "triggered_behaviors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Behaviors"
+          },
+          "triggered_sequences": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Sequences"
+          },
+          "triggered_behavior_detail": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BehaviorDetailItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Behavior Detail"
+          },
+          "feedback_verdict": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/FeedbackVerdict"
+              },
+              {
+                "type": "null"
+              }
+            ]
           }
         },
         "type": "object",
@@ -6335,6 +8318,30 @@
         "title": "BehaviorConfigPatch",
         "description": "Bulk update — weights (existing keys only), thresholds, and/or engine knobs."
       },
+      "BehaviorDetailItem": {
+        "properties": {
+          "key": {
+            "type": "string",
+            "title": "Key"
+          },
+          "offset_sec": {
+            "type": "number",
+            "title": "Offset Sec"
+          },
+          "score": {
+            "type": "number",
+            "title": "Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "key",
+          "offset_sec",
+          "score"
+        ],
+        "title": "BehaviorDetailItem",
+        "description": "One row of the alert's behaviour timeline (first-fired order)."
+      },
       "BehaviorDimension": {
         "properties": {
           "key": {
@@ -6400,6 +8407,175 @@
           "builtin"
         ],
         "title": "BehaviorDimension"
+      },
+      "BillingAnalytics": {
+        "properties": {
+          "by_day": {
+            "items": {
+              "$ref": "#/components/schemas/BillingDayPoint"
+            },
+            "type": "array",
+            "title": "By Day"
+          },
+          "totals": {
+            "$ref": "#/components/schemas/BillingDayPoint"
+          },
+          "suspended_count": {
+            "type": "integer",
+            "title": "Suspended Count"
+          },
+          "credit_count": {
+            "type": "integer",
+            "title": "Credit Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "by_day",
+          "totals",
+          "suspended_count",
+          "credit_count"
+        ],
+        "title": "BillingAnalytics"
+      },
+      "BillingDayPoint": {
+        "properties": {
+          "day": {
+            "type": "string",
+            "title": "Day"
+          },
+          "usage_mnt": {
+            "type": "integer",
+            "title": "Usage Mnt"
+          },
+          "topup_mnt": {
+            "type": "integer",
+            "title": "Topup Mnt"
+          },
+          "promo_mnt": {
+            "type": "integer",
+            "title": "Promo Mnt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "day",
+          "usage_mnt",
+          "topup_mnt",
+          "promo_mnt"
+        ],
+        "title": "BillingDayPoint"
+      },
+      "BillingOverview": {
+        "properties": {
+          "orgs": {
+            "items": {
+              "$ref": "#/components/schemas/OrgBillingRow"
+            },
+            "type": "array",
+            "title": "Orgs"
+          },
+          "total_balance_mnt": {
+            "type": "integer",
+            "title": "Total Balance Mnt"
+          },
+          "total_daily_rate_mnt": {
+            "type": "integer",
+            "title": "Total Daily Rate Mnt"
+          },
+          "active_count": {
+            "type": "integer",
+            "title": "Active Count"
+          },
+          "credit_count": {
+            "type": "integer",
+            "title": "Credit Count"
+          },
+          "suspended_count": {
+            "type": "integer",
+            "title": "Suspended Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "orgs",
+          "total_balance_mnt",
+          "total_daily_rate_mnt",
+          "active_count",
+          "credit_count",
+          "suspended_count"
+        ],
+        "title": "BillingOverview"
+      },
+      "BillingStatus": {
+        "type": "string",
+        "enum": [
+          "active",
+          "credit",
+          "suspended"
+        ],
+        "title": "BillingStatus"
+      },
+      "BillingSummary": {
+        "properties": {
+          "balance_mnt": {
+            "type": "integer",
+            "title": "Balance Mnt"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BillingStatus"
+          },
+          "credit_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Until"
+          },
+          "promo_free_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Free Until"
+          },
+          "daily_rate_mnt": {
+            "type": "integer",
+            "title": "Daily Rate Mnt"
+          },
+          "monthly_rate_mnt": {
+            "type": "integer",
+            "title": "Monthly Rate Mnt"
+          },
+          "stores": {
+            "items": {
+              "$ref": "#/components/schemas/StoreBillingLine"
+            },
+            "type": "array",
+            "title": "Stores"
+          }
+        },
+        "type": "object",
+        "required": [
+          "balance_mnt",
+          "status",
+          "credit_until",
+          "promo_free_until",
+          "daily_rate_mnt",
+          "monthly_rate_mnt",
+          "stores"
+        ],
+        "title": "BillingSummary"
       },
       "Body_upload_clip_api_v1_clips_post": {
         "properties": {
@@ -6513,9 +8689,10 @@
           },
           "risk_threshold": {
             "type": "number",
+            "maximum": 100.0,
             "minimum": 0.0,
             "title": "Risk Threshold",
-            "default": 70.0
+            "default": 50.0
           }
         },
         "type": "object",
@@ -6524,6 +8701,44 @@
           "name"
         ],
         "title": "CameraCreate"
+      },
+      "CameraHealth": {
+        "properties": {
+          "camera_id": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Camera Id"
+          },
+          "fps": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Fps"
+          },
+          "status": {
+            "type": "string",
+            "enum": [
+              "ok",
+              "stalled",
+              "error"
+            ],
+            "title": "Status",
+            "default": "ok"
+          }
+        },
+        "type": "object",
+        "required": [
+          "camera_id"
+        ],
+        "title": "CameraHealth",
+        "description": "Per-camera stream health inside the node heartbeat (audit T12 #3).\n\nLets the cloud tell WHICH camera died instead of only seeing the summed\nFPS dip. status: ok = inferring, stalled = worker alive but 0 FPS,\nerror = worker dead or RTSP read/open failure."
       },
       "CameraPublic": {
         "properties": {
@@ -6584,7 +8799,7 @@
           "risk_threshold": {
             "type": "number",
             "title": "Risk Threshold",
-            "default": 70.0
+            "default": 50.0
           }
         },
         "type": "object",
@@ -6680,6 +8895,7 @@
             "anyOf": [
               {
                 "type": "number",
+                "maximum": 100.0,
                 "minimum": 0.0
               },
               {
@@ -6754,6 +8970,18 @@
             "type": "string",
             "format": "date-time",
             "title": "Created At"
+          },
+          "file_deleted_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "File Deleted At"
           }
         },
         "type": "object",
@@ -6770,6 +8998,71 @@
           "created_at"
         ],
         "title": "ClipPublic"
+      },
+      "ComponentUsage": {
+        "properties": {
+          "name": {
+            "type": "string",
+            "maxLength": 32,
+            "title": "Name"
+          },
+          "cpu_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cpu Pct"
+          },
+          "ram_mb": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ram Mb"
+          }
+        },
+        "type": "object",
+        "required": [
+          "name"
+        ],
+        "title": "ComponentUsage",
+        "description": "Per-component CPU/RAM (sentry-ai / Ollama / MediaMTX / Tunnel) — the\nresource breakdown shown in the dashboard. Stored in telemetry JSON."
+      },
+      "CreditRequest": {
+        "properties": {
+          "until": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Until"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "until"
+        ],
+        "title": "CreditRequest"
       },
       "DimensionCreate": {
         "properties": {
@@ -6908,6 +9201,179 @@
         },
         "type": "object",
         "title": "DimensionUpdate"
+      },
+      "EventLogPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "organization_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Organization Id"
+          },
+          "event_type": {
+            "$ref": "#/components/schemas/EventType"
+          },
+          "severity": {
+            "$ref": "#/components/schemas/EventSeverity"
+          },
+          "message": {
+            "type": "string",
+            "title": "Message"
+          },
+          "actor_user_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor User Id"
+          },
+          "actor_label": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actor Label"
+          },
+          "store_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Id"
+          },
+          "camera_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Camera Id"
+          },
+          "agent_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Agent Id"
+          },
+          "ai_node_id": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "uuid"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Ai Node Id"
+          },
+          "detail": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Detail"
+          },
+          "is_heartbeat": {
+            "type": "boolean",
+            "title": "Is Heartbeat",
+            "default": false
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "created_at",
+          "organization_id",
+          "event_type",
+          "severity",
+          "message"
+        ],
+        "title": "EventLogPublic"
+      },
+      "EventSeverity": {
+        "type": "string",
+        "enum": [
+          "info",
+          "success",
+          "warning",
+          "error",
+          "critical"
+        ],
+        "title": "EventSeverity"
+      },
+      "EventType": {
+        "type": "string",
+        "enum": [
+          "user_login",
+          "user_logout",
+          "user_invited",
+          "invite_accepted",
+          "member_role_changed",
+          "member_access_changed",
+          "org_created",
+          "org_deleted",
+          "camera_registered",
+          "camera_updated",
+          "camera_stream_down",
+          "camera_stream_recovered",
+          "agent_paired",
+          "agent_online",
+          "agent_offline",
+          "agent_heartbeat",
+          "node_paired",
+          "node_online",
+          "node_offline",
+          "node_heartbeat",
+          "alert_created",
+          "error"
+        ],
+        "title": "EventType"
       },
       "FeedbackCreate": {
         "properties": {
@@ -7067,6 +9533,82 @@
         ],
         "title": "InviteResult",
         "description": "Returned after creating an invite. `invite_url` lets the admin share the\nlink manually when email isn't configured (`emailed=false`)."
+      },
+      "JournalEntryPublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "posted_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Posted At"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/JournalKind"
+          },
+          "dr_account": {
+            "$ref": "#/components/schemas/LedgerAccount"
+          },
+          "cr_account": {
+            "$ref": "#/components/schemas/LedgerAccount"
+          },
+          "amount_mnt": {
+            "type": "integer",
+            "title": "Amount Mnt"
+          },
+          "description": {
+            "type": "string",
+            "title": "Description"
+          },
+          "charge_date": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Charge Date"
+          },
+          "meta": {
+            "anyOf": [
+              {
+                "additionalProperties": true,
+                "type": "object"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Meta"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "posted_at",
+          "kind",
+          "dr_account",
+          "cr_account",
+          "amount_mnt",
+          "description"
+        ],
+        "title": "JournalEntryPublic"
+      },
+      "JournalKind": {
+        "type": "string",
+        "enum": [
+          "topup",
+          "usage_charge",
+          "promo_credit",
+          "adjustment"
+        ],
+        "title": "JournalKind"
       },
       "LeadCreate": {
         "properties": {
@@ -7307,6 +9849,16 @@
         "title": "LeadUpdate",
         "description": "Super-admin triage — change status and/or attach notes."
       },
+      "LedgerAccount": {
+        "type": "string",
+        "enum": [
+          "cash",
+          "org_wallet",
+          "revenue",
+          "promo_expense"
+        ],
+        "title": "LedgerAccount"
+      },
       "LiveFrame": {
         "properties": {
           "camera_id": {
@@ -7420,6 +9972,84 @@
             ],
             "title": "Color",
             "default": "green"
+          },
+          "level": {
+            "type": "string",
+            "title": "Level",
+            "default": "LOW"
+          },
+          "state": {
+            "type": "string",
+            "title": "State",
+            "default": "IDLE"
+          },
+          "sequences": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Sequences"
+          },
+          "behaviors": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Behaviors"
+          },
+          "behavior_scores": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Behavior Scores"
+          },
+          "behavior_offsets": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Behavior Offsets"
+          },
+          "reasons": {
+            "items": {
+              "type": "string"
+            },
+            "type": "array",
+            "title": "Reasons"
+          },
+          "episode_started_ms": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Episode Started Ms"
+          },
+          "store_person_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Person Id"
+          },
+          "store_risk_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Store Risk Pct"
           }
         },
         "type": "object",
@@ -7508,6 +10138,106 @@
         ],
         "title": "MemberUpdate",
         "description": "Org admin toggles a member's access (lock = is_active False)."
+      },
+      "OrgBillingRow": {
+        "properties": {
+          "org_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Org Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "slug": {
+            "type": "string",
+            "title": "Slug"
+          },
+          "balance_mnt": {
+            "type": "integer",
+            "title": "Balance Mnt"
+          },
+          "status": {
+            "$ref": "#/components/schemas/BillingStatus"
+          },
+          "daily_rate_mnt": {
+            "type": "integer",
+            "title": "Daily Rate Mnt"
+          },
+          "stores_count": {
+            "type": "integer",
+            "title": "Stores Count"
+          },
+          "cameras_count": {
+            "type": "integer",
+            "title": "Cameras Count"
+          },
+          "credit_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Credit Until"
+          },
+          "promo_free_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Free Until"
+          },
+          "last_topup_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Topup At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "org_id",
+          "name",
+          "slug",
+          "balance_mnt",
+          "status",
+          "daily_rate_mnt",
+          "stores_count",
+          "cameras_count"
+        ],
+        "title": "OrgBillingRow"
+      },
+      "OrgDeleteConfirm": {
+        "properties": {
+          "confirm_slug": {
+            "type": "string",
+            "maxLength": 63,
+            "minLength": 1,
+            "title": "Confirm Slug"
+          }
+        },
+        "type": "object",
+        "required": [
+          "confirm_slug"
+        ],
+        "title": "OrgDeleteConfirm",
+        "description": "Owner deletes their own org — must retype the org slug to confirm.\n\nGuards against an accidental DELETE (fat-finger, replayed request) wiping a\nwhole tenant: the slug is something only a deliberate caller types in."
       },
       "OrgMemberPublic": {
         "properties": {
@@ -7649,6 +10379,286 @@
         ],
         "title": "PendingInvite"
       },
+      "PromoCodeCreate": {
+        "properties": {
+          "code": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 32
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Code"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PromoKind"
+          },
+          "amount_mnt": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Mnt"
+          },
+          "free_days": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "exclusiveMinimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Days"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "max_redemptions": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Max Redemptions",
+            "default": 1
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "kind"
+        ],
+        "title": "PromoCodeCreate",
+        "description": "code omitted/blank → auto-generated (8 chars A-Z0-9)."
+      },
+      "PromoCodePublic": {
+        "properties": {
+          "id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Id"
+          },
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PromoKind"
+          },
+          "amount_mnt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Mnt"
+          },
+          "free_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Days"
+          },
+          "valid_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Valid Until"
+          },
+          "max_redemptions": {
+            "type": "integer",
+            "title": "Max Redemptions"
+          },
+          "redeemed_count": {
+            "type": "integer",
+            "title": "Redeemed Count"
+          },
+          "active": {
+            "type": "boolean",
+            "title": "Active"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          }
+        },
+        "type": "object",
+        "required": [
+          "id",
+          "code",
+          "kind",
+          "amount_mnt",
+          "free_days",
+          "valid_until",
+          "max_redemptions",
+          "redeemed_count",
+          "active",
+          "note",
+          "created_at"
+        ],
+        "title": "PromoCodePublic"
+      },
+      "PromoCodeUpdate": {
+        "properties": {
+          "active": {
+            "anyOf": [
+              {
+                "type": "boolean"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Active"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "title": "PromoCodeUpdate"
+      },
+      "PromoKind": {
+        "type": "string",
+        "enum": [
+          "bonus_amount",
+          "free_days"
+        ],
+        "title": "PromoKind"
+      },
+      "PromoRedeemRequest": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "maxLength": 32,
+            "minLength": 1,
+            "title": "Code"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code"
+        ],
+        "title": "PromoRedeemRequest"
+      },
+      "PromoRedeemResponse": {
+        "properties": {
+          "code": {
+            "type": "string",
+            "title": "Code"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/PromoKind"
+          },
+          "amount_mnt": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Amount Mnt"
+          },
+          "free_days": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Free Days"
+          },
+          "balance_mnt": {
+            "type": "integer",
+            "title": "Balance Mnt"
+          },
+          "promo_free_until": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Promo Free Until"
+          }
+        },
+        "type": "object",
+        "required": [
+          "code",
+          "kind",
+          "balance_mnt"
+        ],
+        "title": "PromoRedeemResponse"
+      },
       "RagCaseCreate": {
         "properties": {
           "store_id": {
@@ -7682,6 +10692,7 @@
           },
           "description": {
             "type": "string",
+            "maxLength": 8000,
             "minLength": 1,
             "title": "Description"
           },
@@ -7802,6 +10813,58 @@
           "bonus"
         ],
         "title": "SequenceInfo"
+      },
+      "StoreBillingLine": {
+        "properties": {
+          "store_id": {
+            "type": "string",
+            "format": "uuid",
+            "title": "Store Id"
+          },
+          "name": {
+            "type": "string",
+            "title": "Name"
+          },
+          "active_cameras": {
+            "type": "integer",
+            "title": "Active Cameras"
+          },
+          "tier": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Tier"
+          },
+          "platform_fee_mnt": {
+            "type": "integer",
+            "title": "Platform Fee Mnt"
+          },
+          "camera_fee_mnt": {
+            "type": "integer",
+            "title": "Camera Fee Mnt"
+          },
+          "monthly_mnt": {
+            "type": "integer",
+            "title": "Monthly Mnt"
+          }
+        },
+        "type": "object",
+        "required": [
+          "store_id",
+          "name",
+          "active_cameras",
+          "tier",
+          "platform_fee_mnt",
+          "camera_fee_mnt",
+          "monthly_mnt"
+        ],
+        "title": "StoreBillingLine",
+        "description": "Per-store breakdown shown on the customer billing page."
       },
       "StoreCreate": {
         "properties": {
@@ -7982,6 +11045,32 @@
         "title": "StreamTokenResponse",
         "description": "Short-lived per-camera WHEP/HLS read token (appended as ?jwt=…)."
       },
+      "TopupRequest": {
+        "properties": {
+          "amount_mnt": {
+            "type": "integer",
+            "exclusiveMinimum": 0.0,
+            "title": "Amount Mnt"
+          },
+          "note": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 500
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Note"
+          }
+        },
+        "type": "object",
+        "required": [
+          "amount_mnt"
+        ],
+        "title": "TopupRequest"
+      },
       "UserAdminUpdate": {
         "properties": {
           "is_active": {
@@ -8115,6 +11204,57 @@
           "type"
         ],
         "title": "ValidationError"
+      },
+      "VlmStatus": {
+        "properties": {
+          "loaded": {
+            "type": "boolean",
+            "title": "Loaded"
+          },
+          "model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 64
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model"
+          },
+          "vram_mb": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Vram Mb"
+          },
+          "gpu_pct": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Gpu Pct"
+          }
+        },
+        "type": "object",
+        "required": [
+          "loaded"
+        ],
+        "title": "VlmStatus",
+        "description": "Whether a VLM model is resident in Ollama + its GPU split, so the dashboard\ncan show the VLM's real GPU/VRAM footprint (per-process VRAM isn't on WDDM)."
       }
     }
   }
