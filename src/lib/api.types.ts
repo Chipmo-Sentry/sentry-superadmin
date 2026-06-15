@@ -2265,7 +2265,7 @@ export interface components {
          * EventType
          * @enum {string}
          */
-        EventType: "user_login" | "user_logout" | "user_invited" | "invite_accepted" | "member_role_changed" | "member_access_changed" | "org_created" | "org_deleted" | "camera_registered" | "camera_updated" | "camera_stream_down" | "camera_stream_recovered" | "agent_paired" | "agent_online" | "agent_offline" | "agent_heartbeat" | "node_paired" | "node_online" | "node_offline" | "node_heartbeat" | "alert_created" | "error";
+        EventType: "user_login" | "user_logout" | "user_invited" | "invite_accepted" | "member_role_changed" | "member_access_changed" | "org_created" | "org_deleted" | "camera_registered" | "camera_updated" | "camera_stream_down" | "camera_stream_recovered" | "agent_paired" | "agent_online" | "agent_offline" | "agent_heartbeat" | "node_paired" | "node_online" | "node_offline" | "node_heartbeat" | "alert_created" | "risk_episode" | "error";
         /** FeedbackCreate */
         FeedbackCreate: {
             /**

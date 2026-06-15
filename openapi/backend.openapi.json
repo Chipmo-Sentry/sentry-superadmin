@@ -9371,6 +9371,7 @@
           "node_offline",
           "node_heartbeat",
           "alert_created",
+          "risk_episode",
           "error"
         ],
         "title": "EventType"
