@@ -14,7 +14,7 @@ export const EVENT_LABEL: Record<EventType, string> = {
   org_deleted: "Байгууллага устлаа",
   camera_registered: "Камер холбогдлоо",
   camera_updated: "Камер засагдлаа",
-  camera_stream_down: "Камер унаслаа",
+  camera_stream_down: "Камер тасарлаа",
   camera_stream_recovered: "Камер сэргэлээ",
   agent_paired: "Десктоп апп холбогдлоо",
   agent_online: "Десктоп апп асаалаа",
