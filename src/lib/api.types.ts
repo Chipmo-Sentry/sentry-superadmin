@@ -388,6 +388,28 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/internal/live-alert": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Create Live Alert From Node
+         * @description Node-push live alert. The AI node detected the breach, cut + VLM-verified
+         *     the clip locally, and POSTs the finished result here (outbound — reliable,
+         *     unlike the old cloud→node /v1/cut-verify pull). camera_id = mediamtx_path.
+         */
+        post: operations["create_live_alert_from_node_api_v1_internal_live_alert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/internal/live-metadata": {
         parameters: {
             query?: never;
@@ -1451,7 +1473,7 @@ export interface components {
             mediamtx_path?: string | null;
             /**
              * Risk Threshold
-             * @default 50
+             * @default 11
              */
             risk_threshold: number;
         };
@@ -1558,6 +1580,11 @@ export interface components {
             provider: string;
             /** Frame Skip */
             frame_skip: number;
+            /**
+             * Breach Mode
+             * @default node_push
+             */
+            breach_mode: string;
         };
         /**
          * AiNodeHeartbeat
@@ -1607,6 +1634,8 @@ export interface components {
             provider_ready?: boolean | null;
             /** Provider Error */
             provider_error?: string | null;
+            /** Breach Mode Effective */
+            breach_mode_effective?: string | null;
         };
         /**
          * AiNodePairRequest
@@ -1676,6 +1705,8 @@ export interface components {
             provider: string;
             /** Frame Skip */
             frame_skip: number;
+            /** Breach Mode */
+            breach_mode: string;
             /** Created At */
             created_at: string | null;
             /**
@@ -1699,6 +1730,13 @@ export interface components {
              */
             readonly provider_error: string | null;
             /**
+             * Breach Mode Effective
+             * @description Live-breach topology the node actually applied (from its last
+             *     heartbeat). The UI compares this to `breach_mode` (desired) to show
+             *     applied vs applying. None for old node versions / no telemetry yet.
+             */
+            readonly breach_mode_effective: string | null;
+            /**
              * Is Online
              * @description Server-computed online status — independent of the viewer's clock.
              */
@@ -1717,6 +1755,8 @@ export interface components {
             provider?: string | null;
             /** Frame Skip */
             frame_skip?: number | null;
+            /** Breach Mode */
+            breach_mode?: ("node_push" | "off") | null;
         };
         /**
          * AlertCategory
@@ -2024,7 +2064,7 @@ export interface components {
             mediamtx_path?: string | null;
             /**
              * Risk Threshold
-             * @default 50
+             * @default 11
              */
             risk_threshold: number;
         };
@@ -2084,7 +2124,7 @@ export interface components {
             mediamtx_path?: string | null;
             /**
              * Risk Threshold
-             * @default 50
+             * @default 11
              */
             risk_threshold: number;
         };
@@ -2461,6 +2501,51 @@ export interface components {
          * @enum {string}
          */
         LedgerAccount: "cash" | "org_wallet" | "revenue" | "promo_expense";
+        /**
+         * LiveAlertCreate
+         * @description POST /api/v1/internal/live-alert — node-push path (ADR live-alert).
+         *
+         *     The AI node detected a sustained risk breach, cut the clip + ran VLM
+         *     LOCALLY, and posts the finished alert here (outbound, reliable). camera_id
+         *     is the Camera.mediamtx_path; the backend resolves org/store. The node only
+         *     posts non-ignore verdicts (it applies the VLM gate itself).
+         */
+        LiveAlertCreate: {
+            /** Camera Id */
+            camera_id: string;
+            category: components["schemas"]["AlertCategory"];
+            /** Confidence */
+            confidence: number;
+            /** Reasoning */
+            reasoning: string;
+            /** Model Name */
+            model_name: string;
+            /** Inference Latency Ms */
+            inference_latency_ms: number;
+            /** Clip B64 */
+            clip_b64: string;
+            /** File Size Bytes */
+            file_size_bytes: number;
+            /** Duration Sec Clip */
+            duration_sec_clip: number;
+            /**
+             * Captured At
+             * Format: date-time
+             */
+            captured_at: string;
+            /** Embedding */
+            embedding?: number[] | null;
+            /** Person Id */
+            person_id?: number | null;
+            /** Peak Risk Pct */
+            peak_risk_pct?: number | null;
+            /** Triggered Behaviors */
+            triggered_behaviors?: string[] | null;
+            /** Triggered Sequences */
+            triggered_sequences?: string[] | null;
+            /** Triggered Behavior Detail */
+            triggered_behavior_detail?: components["schemas"]["BehaviorDetailItem"][] | null;
+        };
         /**
          * LiveFrame
          * @description Per-analyzed-frame metadata from the sentry-ai live worker
@@ -3974,6 +4059,41 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["AlertCreateInternal"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AlertPublic"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_live_alert_from_node_api_v1_internal_live_alert_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["LiveAlertCreate"];
             };
         };
         responses: {

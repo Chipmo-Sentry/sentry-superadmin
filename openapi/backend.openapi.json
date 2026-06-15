@@ -2221,6 +2221,66 @@
         }
       }
     },
+    "/api/v1/internal/live-alert": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Create Live Alert From Node",
+        "description": "Node-push live alert. The AI node detected the breach, cut + VLM-verified\nthe clip locally, and POSTs the finished result here (outbound — reliable,\nunlike the old cloud→node /v1/cut-verify pull). camera_id = mediamtx_path.",
+        "operationId": "create_live_alert_from_node_api_v1_internal_live_alert_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/LiveAlertCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "201": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AlertPublic"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/internal/live-metadata": {
       "post": {
         "tags": [
@@ -7083,10 +7143,10 @@
           },
           "risk_threshold": {
             "type": "number",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Risk Threshold",
-            "default": 50.0
+            "default": 11
           }
         },
         "type": "object",
@@ -7128,8 +7188,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100.0,
-                "minimum": 0.0
+                "maximum": 100,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7323,6 +7383,11 @@
           "frame_skip": {
             "type": "integer",
             "title": "Frame Skip"
+          },
+          "breach_mode": {
+            "type": "string",
+            "title": "Breach Mode",
+            "default": "node_push"
           }
         },
         "type": "object",
@@ -7351,7 +7416,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7400,8 +7465,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100.0,
-                "minimum": 0.0
+                "maximum": 100,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7413,7 +7478,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7425,7 +7490,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7437,8 +7502,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100.0,
-                "minimum": 0.0
+                "maximum": 100,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7450,7 +7515,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7462,7 +7527,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7485,8 +7550,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100.0,
-                "minimum": 0.0
+                "maximum": 100,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7498,7 +7563,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7510,7 +7575,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -7592,6 +7657,18 @@
               }
             ],
             "title": "Provider Error"
+          },
+          "breach_mode_effective": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 16
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Breach Mode Effective"
           }
         },
         "type": "object",
@@ -7816,6 +7893,10 @@
             "type": "integer",
             "title": "Frame Skip"
           },
+          "breach_mode": {
+            "type": "string",
+            "title": "Breach Mode"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -7881,6 +7962,19 @@
             "description": "Why the effective provider isn't ready (e.g. model not pulled), or None.",
             "readOnly": true
           },
+          "breach_mode_effective": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Breach Mode Effective",
+            "description": "Live-breach topology the node actually applied (from its last\nheartbeat). The UI compares this to `breach_mode` (desired) to show\napplied vs applying. None for old node versions / no telemetry yet.",
+            "readOnly": true
+          },
           "is_online": {
             "type": "boolean",
             "title": "Is Online",
@@ -7902,11 +7996,13 @@
           "enabled",
           "provider",
           "frame_skip",
+          "breach_mode",
           "created_at",
           "cameras",
           "provider_effective",
           "provider_ready",
           "provider_error",
+          "breach_mode_effective",
           "is_online"
         ],
         "title": "AiNodePublic"
@@ -7952,14 +8048,29 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 30.0,
-                "minimum": 0.0
+                "maximum": 30,
+                "minimum": 0
               },
               {
                 "type": "null"
               }
             ],
             "title": "Frame Skip"
+          },
+          "breach_mode": {
+            "anyOf": [
+              {
+                "type": "string",
+                "enum": [
+                  "node_push",
+                  "off"
+                ]
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Breach Mode"
           }
         },
         "type": "object",
@@ -7988,8 +8099,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Confidence"
           },
           "reasoning": {
@@ -8006,7 +8117,7 @@
           },
           "inference_latency_ms": {
             "type": "integer",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Inference Latency Ms"
           }
         },
@@ -8616,7 +8727,7 @@
           "duration_sec": {
             "type": "number",
             "title": "Duration Sec",
-            "default": 0.0
+            "default": 0
           }
         },
         "type": "object",
@@ -8665,8 +8776,8 @@
           },
           "stage2_threshold": {
             "type": "number",
-            "maximum": 1.0,
-            "minimum": 0.0,
+            "maximum": 1,
+            "minimum": 0,
             "title": "Stage2 Threshold",
             "default": 0.5
           },
@@ -8689,10 +8800,10 @@
           },
           "risk_threshold": {
             "type": "number",
-            "maximum": 100.0,
-            "minimum": 0.0,
+            "maximum": 100,
+            "minimum": 0,
             "title": "Risk Threshold",
-            "default": 50.0
+            "default": 11
           }
         },
         "type": "object",
@@ -8714,7 +8825,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8799,7 +8910,7 @@
           "risk_threshold": {
             "type": "number",
             "title": "Risk Threshold",
-            "default": 50.0
+            "default": 11
           }
         },
         "type": "object",
@@ -8859,8 +8970,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1.0,
-                "minimum": 0.0
+                "maximum": 1,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -8895,8 +9006,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100.0,
-                "minimum": 0.0
+                "maximum": 100,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9010,7 +9121,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9022,7 +9133,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9086,9 +9197,9 @@
           },
           "weight": {
             "type": "number",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Weight",
-            "default": 1.0
+            "default": 1
           },
           "category": {
             "type": "string",
@@ -9097,8 +9208,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 4.0,
-            "minimum": 1.0,
+            "maximum": 4,
+            "minimum": 1,
             "title": "Level",
             "default": 1
           }
@@ -9141,7 +9252,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9175,8 +9286,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 4.0,
-                "minimum": 1.0
+                "maximum": 4,
+                "minimum": 1
               },
               {
                 "type": "null"
@@ -9670,8 +9781,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000.0,
-                "minimum": 0.0
+                "maximum": 100000,
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -9860,6 +9971,154 @@
         ],
         "title": "LedgerAccount"
       },
+      "LiveAlertCreate": {
+        "properties": {
+          "camera_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Camera Id"
+          },
+          "category": {
+            "$ref": "#/components/schemas/AlertCategory"
+          },
+          "confidence": {
+            "type": "number",
+            "maximum": 1,
+            "minimum": 0,
+            "title": "Confidence"
+          },
+          "reasoning": {
+            "type": "string",
+            "maxLength": 2000,
+            "minLength": 1,
+            "title": "Reasoning"
+          },
+          "model_name": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Model Name"
+          },
+          "inference_latency_ms": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "Inference Latency Ms"
+          },
+          "clip_b64": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Clip B64"
+          },
+          "file_size_bytes": {
+            "type": "integer",
+            "minimum": 0,
+            "title": "File Size Bytes"
+          },
+          "duration_sec_clip": {
+            "type": "number",
+            "minimum": 0,
+            "title": "Duration Sec Clip"
+          },
+          "captured_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Captured At"
+          },
+          "embedding": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "number"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Embedding"
+          },
+          "person_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          },
+          "peak_risk_pct": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Risk Pct"
+          },
+          "triggered_behaviors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Behaviors"
+          },
+          "triggered_sequences": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Sequences"
+          },
+          "triggered_behavior_detail": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/BehaviorDetailItem"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Behavior Detail"
+          }
+        },
+        "type": "object",
+        "required": [
+          "camera_id",
+          "category",
+          "confidence",
+          "reasoning",
+          "model_name",
+          "inference_latency_ms",
+          "clip_b64",
+          "file_size_bytes",
+          "duration_sec_clip",
+          "captured_at"
+        ],
+        "title": "LiveAlertCreate",
+        "description": "POST /api/v1/internal/live-alert — node-push path (ADR live-alert).\n\nThe AI node detected a sustained risk breach, cut the clip + ran VLM\nLOCALLY, and posts the finished alert here (outbound, reliable). camera_id\nis the Camera.mediamtx_path; the backend resolves org/store. The node only\nposts non-ignore verdicts (it applies the VLM gate itself)."
+      },
       "LiveFrame": {
         "properties": {
           "camera_id": {
@@ -9891,7 +10150,7 @@
           "fps_inference": {
             "type": "number",
             "title": "Fps Inference",
-            "default": 0.0
+            "default": 0
           },
           "tracks": {
             "items": {
@@ -9956,13 +10215,13 @@
           "det_confidence": {
             "type": "number",
             "title": "Det Confidence",
-            "default": 0.0
+            "default": 0
           },
           "risk_pct": {
             "type": "number",
-            "minimum": 0.0,
+            "minimum": 0,
             "title": "Risk Pct",
-            "default": 0.0
+            "default": 0
           },
           "color": {
             "type": "string",
@@ -10401,7 +10660,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "exclusiveMinimum": 0.0
+                "exclusiveMinimum": 0
               },
               {
                 "type": "null"
@@ -10413,7 +10672,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "exclusiveMinimum": 0.0
+                "exclusiveMinimum": 0
               },
               {
                 "type": "null"
@@ -10435,7 +10694,7 @@
           },
           "max_redemptions": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Max Redemptions",
             "default": 1
           },
@@ -10776,8 +11035,8 @@
           },
           "k": {
             "type": "integer",
-            "maximum": 10.0,
-            "minimum": 1.0,
+            "maximum": 10,
+            "minimum": 1,
             "title": "K",
             "default": 3
           }
@@ -11050,7 +11309,7 @@
         "properties": {
           "amount_mnt": {
             "type": "integer",
-            "exclusiveMinimum": 0.0,
+            "exclusiveMinimum": 0,
             "title": "Amount Mnt"
           },
           "note": {
@@ -11228,7 +11487,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0.0
+                "minimum": 0
               },
               {
                 "type": "null"
@@ -11240,8 +11499,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100.0,
-                "minimum": 0.0
+                "maximum": 100,
+                "minimum": 0
               },
               {
                 "type": "null"

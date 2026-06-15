@@ -35,6 +35,14 @@ import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 // _REGISTRY keys). Default first. qwen2.5-vl-7b is deprecated, kept for rollback.
 const PROVIDERS = ["qwen3-vl-4b", "minicpm-v-2.6", "qwen3-vl-vllm", "qwen2.5-vl-7b"];
 
+// Live-breach topology (central control, ADR-0026) — must match the backend
+// AiNodeUpdate.breach_mode literals + sentry-ai runtime_config _BREACH_MODES.
+const BREACH_MODES = ["node_push", "off"] as const;
+const BREACH_MODE_LABELS: Record<string, string> = {
+  node_push: "Сэрэмжлүүлэг идэвхтэй (node-push)",
+  off: "Унтраалттай (зөвхөн хяналт)",
+};
+
 /** Latest published AI server installer (GitHub Releases). `latest/download`
  * always resolves to the newest release asset, so this never needs bumping. */
 const AI_SETUP_DOWNLOAD_URL =
@@ -167,6 +175,36 @@ function ProviderSyncBadge({ desired, status }: { desired: string; status: Provi
   return (
     <div className="mt-0.5 text-xs" style={amber}>
       ⏳ шалгаж байна…
+    </div>
+  );
+}
+
+/** Compares the DESIRED breach_mode (dropdown) to what the node reported it
+ * actually applied, so the operator sees the server really took the change. */
+function BreachModeSyncBadge({
+  desired,
+  effective,
+}: {
+  desired: string;
+  effective: string | null;
+}) {
+  if (effective === null) {
+    return (
+      <div className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+        ⏳ серверээс хариу хүлээж байна…
+      </div>
+    );
+  }
+  if (effective !== desired) {
+    return (
+      <div className="mt-0.5 text-xs" style={{ color: "var(--color-warning, #d97706)" }}>
+        ⏳ хэрэгжүүлж байна… (сервер дээр: {BREACH_MODE_LABELS[effective] ?? effective})
+      </div>
+    );
+  }
+  return (
+    <div className="mt-0.5 text-xs" style={{ color: "var(--color-success)" }}>
+      ✓ серверт идэвхтэй
     </div>
   );
 }
@@ -450,6 +488,13 @@ export function AiNodesPage() {
                         desired={n.provider}
                         status={parseProviderStatus(n.telemetry)}
                       />
+                      <div className="mt-2 border-t border-[var(--color-border)] pt-1">
+                        {BREACH_MODE_LABELS[n.breach_mode] ?? n.breach_mode}
+                      </div>
+                      <BreachModeSyncBadge
+                        desired={n.breach_mode}
+                        effective={n.breach_mode_effective}
+                      />
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center justify-end gap-1">
@@ -558,6 +603,7 @@ function EditNodeModal({
   const [enabled, setEnabled] = useState(true);
   const [provider, setProvider] = useState(PROVIDERS[0]);
   const [frameSkip, setFrameSkip] = useState(3);
+  const [breachMode, setBreachMode] = useState<(typeof BREACH_MODES)[number]>("node_push");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -567,6 +613,7 @@ function EditNodeModal({
     setEnabled(node.enabled);
     setProvider(node.provider);
     setFrameSkip(node.frame_skip);
+    setBreachMode(node.breach_mode === "off" ? "off" : "node_push");
     setError(null);
   }, [node]);
 
@@ -581,6 +628,7 @@ function EditNodeModal({
         enabled,
         provider,
         frame_skip: frameSkip,
+        breach_mode: breachMode,
       });
       onSaved();
     } catch (err) {
@@ -614,6 +662,22 @@ function EditNodeModal({
               {PROVIDERS.map((p) => (
                 <option key={p} value={p}>
                   {p}
+                </option>
+              ))}
+            </Select>
+          </Field>
+          <Field
+            label="Сэрэмжлүүлгийн горим"
+            hint="node_push: AI өөрөө зөрчил илрүүлж, бичлэг огтлоод сэрэмжлүүлэг үүсгэнэ. off: хяналт/overlay ажиллана, сэрэмжлүүлэг үүсгэхгүй."
+          >
+            <Select
+              value={breachMode}
+              onChange={(e) => setBreachMode(e.target.value as (typeof BREACH_MODES)[number])}
+              disabled={saving}
+            >
+              {BREACH_MODES.map((m) => (
+                <option key={m} value={m}>
+                  {BREACH_MODE_LABELS[m]}
                 </option>
               ))}
             </Select>
