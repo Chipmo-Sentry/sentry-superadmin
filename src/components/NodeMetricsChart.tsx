@@ -88,6 +88,7 @@ function Chart({
   color,
   series,
   series2,
+  series2Label = "Sentry",
   windowStart,
   windowMs,
   gapMs,
@@ -99,6 +100,7 @@ function Chart({
   color: string;
   series: Pt[];
   series2?: Pt[];
+  series2Label?: string;
   windowStart: number;
   windowMs: number;
   gapMs: number;
@@ -214,7 +216,7 @@ function Chart({
               Бүх систем: {hp.label ?? "—"}
             </div>
             {series2 && (
-              <div style={{ color }}>Sentry: {hp2?.label ?? "—"}</div>
+              <div style={{ color }}>{series2Label}: {hp2?.label ?? "—"}</div>
             )}
           </div>
         )}
@@ -345,7 +347,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             gapMs={gapMs}
             ticks={ticks}
             latest={last?.gpu_pct != null ? `${last.gpu_pct}%` : "—"}
-            note="Бүх систем. Process тус бүрийн GPU ачаалал (%) NVML-д байхгүй — Sentry-ий GPU санах ойг VRAM графикаас хар."
+            note="Ногоон шугам өсөх = GPU дээр ажиллаж байна (энэ node-д бараг бүгд AI: YOLO + VLM). Process тусын GPU% NVML-д байхгүй; VRAM-ийг доорх графикаас хар."
           />
           <Chart
             label="RAM"
@@ -359,15 +361,17 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             latest={last ? `${gb(last.ram_used_mb)}/${gb(last.ram_total_mb)} GB` : "—"}
           />
           <Chart
-            label="VRAM"
+            label="VRAM (GPU санах ой)"
             color="#a855f7"
             series={seriesOf(vramPct, (m, v) => `${gb(m.vram_used_mb)}/${gb(m.vram_total_mb)} GB · ${v.toFixed(0)}%`)}
             series2={seriesOf(sVramPct, (m, v) => `${gb(m.sentry_vram_mb)} GB · ${v.toFixed(0)}%`)}
+            series2Label="VLM (GPU)"
             windowStart={windowStart}
             windowMs={windowMs}
             gapMs={gapMs}
             ticks={ticks}
             latest={last ? `${gb(last.vram_used_mb)}/${gb(last.vram_total_mb)} GB` : "—"}
+            note="── бүх төхөөрөмж (суурь ~2 GB = YOLO тасралтгүй). ╌╌ = VLM-ийн GPU VRAM — зөрчил шалгахад ~4 GB рүү өснө."
           />
         </div>
       )}
