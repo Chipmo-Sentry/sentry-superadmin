@@ -218,11 +218,6 @@ function BreachModeSyncBadge({
   );
 }
 
-interface ComponentUsage {
-  name: string;
-  cpu_pct: number | null;
-  ram_mb: number | null;
-}
 interface VlmStatus {
   loaded: boolean;
   model: string | null;
@@ -230,15 +225,6 @@ interface VlmStatus {
   gpu_pct: number | null;
 }
 
-function parseComponents(raw: string | null): ComponentUsage[] | null {
-  if (!raw) return null;
-  try {
-    const t = JSON.parse(raw) as { components?: unknown };
-    return Array.isArray(t.components) ? (t.components as ComponentUsage[]) : null;
-  } catch {
-    return null;
-  }
-}
 function parseVlm(raw: string | null): VlmStatus | null {
   if (!raw) return null;
   try {
@@ -293,12 +279,55 @@ function agoLabel(sec: number | null): string {
   return `${Math.round(sec / 86400)} өдөр өмнө`;
 }
 
-const CARD = "rounded-md px-3 py-2.5";
-const ROW = "flex items-center justify-between rounded-md px-3 py-2 text-sm";
+function parseSys(raw: string | null): { cpu: number | null; ramU: number | null; ramT: number | null } {
+  const n = (v: unknown) => (typeof v === "number" ? v : null);
+  if (!raw) return { cpu: null, ramU: null, ramT: null };
+  try {
+    const t = JSON.parse(raw) as { cpu_pct?: unknown; ram_used_mb?: unknown; ram_total_mb?: unknown };
+    return { cpu: n(t.cpu_pct), ramU: n(t.ram_used_mb), ramT: n(t.ram_total_mb) };
+  } catch {
+    return { cpu: null, ramU: null, ramT: null };
+  }
+}
 
-/** AI-server resource panel, rethought around WHAT the GPU is doing: YOLO (always
- * on, light) + the VLM (event-driven — its run history proves it uses the GPU even
- * while idle), then the whole-GPU total, then the system processes. */
+/** One KPI stat card: muted label, big value, optional sub + VRAM-style bar. */
+function Kpi({
+  label,
+  value,
+  sub,
+  accent,
+  bar,
+}: {
+  label: string;
+  value: string;
+  sub?: string;
+  accent?: string;
+  bar?: number | null;
+}) {
+  return (
+    <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary)" }}>
+      <div className="truncate text-xs text-[var(--color-muted-foreground)]">{label}</div>
+      <div className="mt-0.5 text-xl font-medium" style={accent ? { color: accent } : undefined}>
+        {value}
+      </div>
+      {sub && <div className="mt-0.5 truncate text-xs text-[var(--color-muted-foreground)]">{sub}</div>}
+      {bar != null && (
+        <div
+          className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full"
+          style={{ background: "var(--color-muted)" }}
+        >
+          <div
+            className="h-full rounded-full"
+            style={{ width: `${Math.min(100, bar)}%`, background: "#a855f7" }}
+          />
+        </div>
+      )}
+    </div>
+  );
+}
+
+/** Compact real-time KPI strip — the few numbers that matter at a glance:
+ * GPU, the VLM (GPU-ready + live/last-run), YOLO (cameras/FPS), CPU, RAM. */
 function ResourceBreakdown({
   telemetry,
   desiredProvider,
@@ -306,113 +335,58 @@ function ResourceBreakdown({
   telemetry: string | null;
   desiredProvider: string;
 }) {
-  const comps = parseComponents(telemetry);
   const vlm = parseVlm(telemetry);
   const vram = parseVram(telemetry);
   const act = parseVlmActivity(telemetry);
   const prov = parseProviderStatus(telemetry);
   const { fps, cams } = parseFps(telemetry);
-  if ((!comps || comps.length === 0) && !vlm && vram.used == null) return null;
+  const sys = parseSys(telemetry);
+  if (vram.used == null && vlm == null && fps == null && sys.cpu == null) return null;
 
-  const vlmVram = vlm?.loaded ? (vlm.vram_mb ?? 0) : 0;
-  // Per-process VRAM is N/A on WDDM; on this single-GPU box the only CUDA users are
-  // sentry-ai (YOLO + torch) and the VLM, so YOLO ≈ device VRAM − the VLM's VRAM.
-  const sentryVram = vram.used != null ? Math.max(0, vram.used - vlmVram) : null;
+  const green = "var(--color-success)";
   const yoloRunning = (fps ?? 0) > 0;
   const vlmModel = vlm?.model ?? prov?.effective ?? desiredProvider;
-  const secBg = { background: "var(--color-background-secondary)" } as const;
-  const muted = "text-[var(--color-muted-foreground)]";
+  const g = (mb: number) => (mb / 1024).toFixed(1);
 
   return (
-    <div className="mb-4 flex flex-col gap-3">
-      <div className="text-sm text-[var(--color-foreground)]">AI ачаалал (GPU)</div>
-
-      <div className={CARD} style={secBg}>
-        <div className="flex items-center justify-between">
-          <span className="text-sm">YOLO — хүн / объект таних (тасралтгүй)</span>
-          <span
-            className="text-xs"
-            style={{ color: yoloRunning ? "var(--color-success)" : "var(--color-muted-foreground)" }}
-          >
-            {yoloRunning ? "● GPU дээр ажиллаж байна" : "⏸ камер хүлээж байна"}
-          </span>
-        </div>
-        <div className={`mt-1 text-xs ${muted}`}>
-          {sentryVram != null ? `~${(sentryVram / 1024).toFixed(1)} GB VRAM` : "GPU дээр"}
-          {cams != null ? ` · ${cams} камер` : ""}
-          {fps != null ? ` · ${fps.toFixed(1)} FPS` : ""}
-          {" · жижиг модель тул GPU util бага нь хэвийн"}
-        </div>
-      </div>
-
-      <div className={CARD} style={secBg}>
-        <div className="flex items-center justify-between">
-          <span className="text-sm">VLM — зөрчил шалгах ({vlmModel})</span>
-          {vlm?.loaded ? (
-            <span className="text-xs" style={{ color: "var(--color-success)" }}>
-              ● ОДОО GPU дээр · {((vlm.vram_mb ?? 0) / 1024).toFixed(1)} GB · {vlm.gpu_pct ?? 0}% GPU
-            </span>
-          ) : prov?.ready ? (
-            <span className="text-xs" style={{ color: "var(--color-success)" }}>
-              ✓ GPU-д бэлэн
-            </span>
-          ) : (
-            <span className={`text-xs ${muted}`}>хүлээгдэж байна</span>
-          )}
-        </div>
-        <div className={`mt-1 text-xs ${muted}`}>
-          {vlm?.loaded ? "" : "зөрчилд л богино ачаалагдана · ажиллах үед ~3.9 GB / 100% GPU"}
-          {act ? ` · сүүлд: ${agoLabel(act.last_ago_sec)}` : ""}
-          {act && act.count > 0 ? ` · нийт ${act.count} verify` : ""}
-          {act && act.last_latency_ms != null ? ` · ${(act.last_latency_ms / 1000).toFixed(1)}с` : ""}
-        </div>
-      </div>
-
-      {vram.used != null && (
-        <div className={CARD} style={secBg}>
-          <div className="flex items-center justify-between text-sm">
-            <span>GPU нийт (бүх төхөөрөмж)</span>
-            <span className={muted}>
-              {vram.gpu ?? 0}% · VRAM {(vram.used / 1024).toFixed(1)}/
-              {((vram.total ?? 8192) / 1024).toFixed(1)} GB
-            </span>
-          </div>
-          <div
-            className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full"
-            style={{ background: "var(--color-muted)" }}
-          >
-            <div
-              className="h-full rounded-full"
-              style={{
-                width: `${Math.min(100, (vram.used / (vram.total ?? 8192)) * 100)}%`,
-                background: "#a855f7",
-              }}
-            />
-          </div>
-        </div>
-      )}
-
-      {comps && comps.length > 0 && (
-        <>
-          <div className={`mt-1 text-sm ${muted}`}>Системийн процессууд (CPU/RAM)</div>
-          {comps.map((c) => (
-            <div key={c.name} className={ROW} style={secBg}>
-              <span>{c.name}</span>
-              <span className={muted}>
-                CPU {Math.round(c.cpu_pct ?? 0)}% · RAM{" "}
-                {((c.ram_mb ?? 0) / 1024).toFixed(c.ram_mb && c.ram_mb >= 1024 ? 1 : 2)} GB
-              </span>
-            </div>
-          ))}
-        </>
-      )}
-
-      <div className={`text-xs ${muted}`}>
-        YOLO тасралтгүй GPU дээр хүн таньдаг (жижиг тул util бага). VLM зөрчил гарахад л GPU дээр
-        богино ачаалагддаг — VRAM графикийн ягаан өндөрлөгүүд = VLM ажилласан үе. GPU util (%) бол
-        бүх төхөөрөмжийнх; WDDM дээр процесс тусын VRAM-ыг NVML гаргадаггүй тул YOLO-гийнх нь нийт−VLM
-        ойролцоо тооцоо.
-      </div>
+    <div
+      className="mb-4 grid gap-2"
+      style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}
+    >
+      <Kpi
+        label="GPU ачаалал"
+        value={`${vram.gpu ?? 0}%`}
+        sub={vram.used != null ? `VRAM ${g(vram.used)}/${g(vram.total ?? 8192)} GB` : undefined}
+        bar={vram.used != null ? (vram.used / (vram.total ?? 8192)) * 100 : null}
+      />
+      <Kpi
+        label={`VLM · ${vlmModel}`}
+        value={vlm?.loaded ? `${vlm.gpu_pct ?? 0}% GPU` : prov?.ready ? "GPU-д бэлэн" : "—"}
+        accent={vlm?.loaded || prov?.ready ? green : undefined}
+        sub={
+          vlm?.loaded
+            ? `● одоо · ${g(vlm.vram_mb ?? 0)} GB`
+            : act
+              ? `сүүлд ${agoLabel(act.last_ago_sec)} · ${act.count} verify`
+              : "зөрчилд ачаалагдана"
+        }
+      />
+      <Kpi
+        label="YOLO · хүн таних"
+        value={cams != null ? `${cams} камер` : "—"}
+        accent={yoloRunning ? green : undefined}
+        sub={
+          fps != null
+            ? `${fps.toFixed(1)} FPS · ${yoloRunning ? "● ажиллаж байна" : "хүлээж байна"}`
+            : undefined
+        }
+      />
+      <Kpi label="CPU" value={sys.cpu != null ? `${Math.round(sys.cpu)}%` : "—"} />
+      <Kpi
+        label="RAM"
+        value={sys.ramU != null ? `${g(sys.ramU)} GB` : "—"}
+        sub={sys.ramT != null ? `/ ${g(sys.ramT)} GB` : undefined}
+      />
     </div>
   );
 }
