@@ -50,43 +50,52 @@ const AI_SETUP_DOWNLOAD_URL =
 
 const gb = (mb: unknown): string => (Number(mb) / 1024).toFixed(1);
 
-function telemetrySummary(raw: string | null): string {
-  if (!raw) return "—";
-  try {
-    const t = JSON.parse(raw) as Record<string, unknown>;
-    const parts: string[] = [];
-    // Resource load (docs/19): CPU / RAM / GPU / VRAM / temp, then FPS + cameras.
-    if (t.cpu_pct != null) parts.push(`CPU ${Number(t.cpu_pct).toFixed(0)}%`);
-    if (t.ram_used_mb != null && t.ram_total_mb != null)
-      parts.push(`RAM ${gb(t.ram_used_mb)}/${gb(t.ram_total_mb)} GB`);
-    if (t.gpu_pct != null) parts.push(`GPU ${Number(t.gpu_pct)}%`);
-    if (t.vram_used_mb != null && t.vram_total_mb != null)
-      parts.push(`VRAM ${gb(t.vram_used_mb)}/${gb(t.vram_total_mb)} GB`);
-    else if (t.vram_mb != null) parts.push(`${t.vram_mb} MB VRAM`);
-    if (t.gpu_temp_c != null) parts.push(`${Number(t.gpu_temp_c)}°C`);
-    if (t.fps_inference != null) parts.push(`${Number(t.fps_inference).toFixed(1)} FPS`);
-    if (t.active_cameras != null) parts.push(`${t.active_cameras} камер`);
-    return parts.length ? parts.join(" · ") : "—";
-  } catch {
-    return "—";
-  }
+/** One compact labeled metric chip (e.g. "GPU 16%"). */
+function Pill({ label, value }: { label?: string; value: string }) {
+  return (
+    <span
+      className="inline-flex items-baseline gap-1 rounded-md px-1.5 py-0.5 text-xs"
+      style={{ background: "var(--color-background-secondary)" }}
+    >
+      {label && <span className="text-[10px] uppercase opacity-55">{label}</span>}
+      <span className="font-medium">{value}</span>
+    </span>
+  );
 }
 
-/** Just THIS project's (Sentry-AI process tree) resource footprint, isolated from
- * the whole machine. Per-process GPU *utilization* isn't exposed by NVML, so only
- * CPU / RAM / VRAM are available — GPU memory (VRAM) is Sentry's GPU footprint. */
-function sentryTelemetrySummary(raw: string | null): string | null {
-  if (!raw) return null;
+/** Whole-machine telemetry as scannable chips instead of a run-on text blob. */
+function TelemetryPills({ raw }: { raw: string | null }) {
+  const muted = "text-[var(--color-muted-foreground)]";
+  if (!raw) return <span className={muted}>—</span>;
+  let t: Record<string, unknown>;
   try {
-    const t = JSON.parse(raw) as Record<string, unknown>;
-    const parts: string[] = [];
-    if (t.sentry_cpu_pct != null) parts.push(`CPU ${Number(t.sentry_cpu_pct).toFixed(0)}%`);
-    if (t.sentry_ram_mb != null) parts.push(`RAM ${gb(t.sentry_ram_mb)} GB`);
-    if (t.sentry_vram_mb != null) parts.push(`VRAM ${gb(t.sentry_vram_mb)} GB`);
-    return parts.length ? parts.join(" · ") : null;
+    t = JSON.parse(raw) as Record<string, unknown>;
   } catch {
-    return null;
+    return <span className={muted}>—</span>;
   }
+  const num = (v: unknown) => (typeof v === "number" ? v : null);
+  const cpu = num(t.cpu_pct);
+  const gpu = num(t.gpu_pct);
+  const temp = num(t.gpu_temp_c);
+  const ramU = num(t.ram_used_mb);
+  const ramT = num(t.ram_total_mb);
+  const vramU = num(t.vram_used_mb);
+  const vramT = num(t.vram_total_mb);
+  const fps = num(t.fps_inference);
+  const cams = num(t.active_cameras);
+  return (
+    <div className="flex flex-wrap gap-1.5">
+      {cpu != null && <Pill label="CPU" value={`${cpu.toFixed(0)}%`} />}
+      {gpu != null && <Pill label="GPU" value={`${gpu}%`} />}
+      {ramU != null && ramT != null && <Pill label="RAM" value={`${gb(ramU)}/${gb(ramT)} GB`} />}
+      {vramU != null && vramT != null && (
+        <Pill label="VRAM" value={`${gb(vramU)}/${gb(vramT)} GB`} />
+      )}
+      {temp != null && <Pill value={`${temp}°C`} />}
+      {fps != null && <Pill label="FPS" value={fps.toFixed(1)} />}
+      {cams != null && <Pill value={`${cams} камер`} />}
+    </div>
+  );
 }
 
 /** Per-dependency health the node probes locally (ollama/ingest/ai/tunnel). */
@@ -360,12 +369,26 @@ function ResourceBreakdown({
       </div>
 
       {vram.used != null && (
-        <div className={ROW} style={secBg}>
-          <span>GPU нийт (бүх төхөөрөмж)</span>
-          <span className={muted}>
-            {vram.gpu ?? 0}% · VRAM {(vram.used / 1024).toFixed(1)}/
-            {((vram.total ?? 8192) / 1024).toFixed(1)} GB
-          </span>
+        <div className={CARD} style={secBg}>
+          <div className="flex items-center justify-between text-sm">
+            <span>GPU нийт (бүх төхөөрөмж)</span>
+            <span className={muted}>
+              {vram.gpu ?? 0}% · VRAM {(vram.used / 1024).toFixed(1)}/
+              {((vram.total ?? 8192) / 1024).toFixed(1)} GB
+            </span>
+          </div>
+          <div
+            className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full"
+            style={{ background: "var(--color-muted)" }}
+          >
+            <div
+              className="h-full rounded-full"
+              style={{
+                width: `${Math.min(100, (vram.used / (vram.total ?? 8192)) * 100)}%`,
+                background: "#a855f7",
+              }}
+            />
+          </div>
         </div>
       )}
 
@@ -544,17 +567,10 @@ export function AiNodesPage() {
                     </TableCell>
                     <TableCell className="text-sm">{n.version || "—"}</TableCell>
                     <TableCell className="max-w-md whitespace-normal break-words text-sm">
-                      <div className="text-[var(--color-muted-foreground)]">
-                        <span className="text-[10px] uppercase opacity-60">Бүх систем </span>
-                        {telemetrySummary(n.telemetry)}
+                      <TelemetryPills raw={n.telemetry} />
+                      <div className="mt-1.5">
+                        <HealthDots health={parseHealth(n.telemetry)} />
                       </div>
-                      {sentryTelemetrySummary(n.telemetry) && (
-                        <div className="text-[var(--color-foreground)]">
-                          <span className="text-[10px] uppercase opacity-60">Sentry </span>
-                          {sentryTelemetrySummary(n.telemetry)}
-                        </div>
-                      )}
-                      <HealthDots health={parseHealth(n.telemetry)} />
                     </TableCell>
                     <TableCell className="text-sm">
                       <div>
