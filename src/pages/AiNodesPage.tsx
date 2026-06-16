@@ -289,6 +289,15 @@ function parseSys(raw: string | null): { cpu: number | null; ramU: number | null
     return { cpu: null, ramU: null, ramT: null };
   }
 }
+function parseYolo(raw: string | null): string | null {
+  if (!raw) return null;
+  try {
+    const t = JSON.parse(raw) as { yolo_model?: unknown };
+    return typeof t.yolo_model === "string" ? t.yolo_model : null;
+  } catch {
+    return null;
+  }
+}
 
 /** One KPI stat card: muted label, big value, optional sub + VRAM-style bar. */
 function Kpi({
@@ -341,6 +350,7 @@ function ResourceBreakdown({
   const prov = parseProviderStatus(telemetry);
   const { fps, cams } = parseFps(telemetry);
   const sys = parseSys(telemetry);
+  const yoloModel = parseYolo(telemetry);
   if (vram.used == null && vlm == null && fps == null && sys.cpu == null) return null;
 
   const green = "var(--color-success)";
@@ -354,9 +364,13 @@ function ResourceBreakdown({
       style={{ gridTemplateColumns: "repeat(auto-fit, minmax(150px, 1fr))" }}
     >
       <Kpi
-        label="GPU ачаалал"
+        label="GPU ачаалал (util)"
         value={`${vram.gpu ?? 0}%`}
-        sub={vram.used != null ? `VRAM ${g(vram.used)}/${g(vram.total ?? 8192)} GB` : undefined}
+        sub={
+          vram.used != null
+            ? `VRAM ${g(vram.used)}/${g(vram.total ?? 8192)} GB · ${Math.round((vram.used / (vram.total ?? 8192)) * 100)}%`
+            : undefined
+        }
         bar={vram.used != null ? (vram.used / (vram.total ?? 8192)) * 100 : null}
       />
       <Kpi
@@ -372,14 +386,16 @@ function ResourceBreakdown({
         }
       />
       <Kpi
-        label="YOLO · хүн таних"
-        value={cams != null ? `${cams} камер` : "—"}
+        label="YOLO модель · хүн таних"
+        value={yoloModel ?? "—"}
         accent={yoloRunning ? green : undefined}
-        sub={
-          fps != null
-            ? `${fps.toFixed(1)} FPS · ${yoloRunning ? "● ажиллаж байна" : "хүлээж байна"}`
-            : undefined
-        }
+        sub={[
+          cams != null ? `${cams} камер` : null,
+          fps != null ? `${fps.toFixed(1)} FPS` : null,
+          yoloRunning ? "● ажиллаж байна" : "хүлээж байна",
+        ]
+          .filter(Boolean)
+          .join(" · ")}
       />
       <Kpi label="CPU" value={sys.cpu != null ? `${Math.round(sys.cpu)}%` : "—"} />
       <Kpi
