@@ -14,7 +14,7 @@ RUN apk add --no-cache git
 WORKDIR /app
 
 # Pinned to a tag for reproducible builds (bump deliberately on ui-kit release).
-ARG UI_KIT_REF=v0.5.0
+ARG UI_KIT_REF=v0.6.0
 RUN git clone --depth 1 --branch "${UI_KIT_REF}" \
       https://github.com/Chipmo-Sentry/sentry-ui-kit.git sentry-ui-kit \
     && cd sentry-ui-kit \
