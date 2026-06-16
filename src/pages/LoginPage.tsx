@@ -53,8 +53,9 @@ export function LoginPage() {
   }
 
   return (
-    <div className="grid h-full place-items-center bg-[var(--color-muted)] p-4">
-      <Card className="w-full max-w-sm">
+    <div className="relative grid h-full place-items-center overflow-hidden bg-[var(--color-background)] p-4">
+      <div className="sentry-aurora" aria-hidden="true" />
+      <Card className="relative z-10 w-full max-w-sm">
         <CardContent className="space-y-6 p-8">
           <div className="flex flex-col items-center gap-2">
             <Logo className="h-9 w-auto" />
