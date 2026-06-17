@@ -31,9 +31,15 @@ import { NodeMetricsChart } from "@/components/NodeMetricsChart";
 import { admin } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
-// VLM providers the node can hot-apply (must match sentry-ai providers/factory.py
-// _REGISTRY keys). Default first. qwen2.5-vl-7b is deprecated, kept for rollback.
-const PROVIDERS = ["qwen3-vl-4b", "minicpm-v-2.6", "qwen3-vl-vllm", "qwen2.5-vl-7b"];
+// VLM providers OFFERED in the UI = those actually pulled/runnable on the node's
+// Ollama today (verified 2026-06-17: qwen3-vl:4b-instruct + minicpm-v:8b). Default
+// first. The backend registry (sentry-ai providers/factory.py) still knows two more
+// that are NOT offered here because they can't run on this node:
+//   - qwen3-vl-vllm  : Linux-GPU scale path, needs a separate vLLM server (none yet)
+//   - qwen2.5-vl-7b  : deprecated (ADR-0026) rollback, model not pulled
+// Omitting them stops an operator from picking a provider that would fail to apply.
+// Re-add a name here once its model is installed / a vLLM host exists.
+const PROVIDERS = ["qwen3-vl-4b", "minicpm-v-2.6"];
 
 // Live-breach topology (central control, ADR-0026) — must match the backend
 // AiNodeUpdate.breach_mode literals + sentry-ai runtime_config _BREACH_MODES.
