@@ -17,6 +17,7 @@ export const CATEGORY_LABEL: Record<AlertCategory, string> = {
   browsing: "Хайж байгаа",
   cart_pickup: "Сагсанд авсан",
   pocket_conceal: "Халаасанд хийсэн",
+  bag_conceal: "Цүнхэнд хийсэн",
   other: "Бусад",
 };
 
