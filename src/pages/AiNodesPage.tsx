@@ -678,6 +678,42 @@ function PairingCodeModal({
   );
 }
 
+/** One labeled numeric setting (label + hint + number input) for the node config
+ * dialog. Mirrors the Frame-skip Field but reusable across the YOLO/scan knobs. */
+function NumSetting({
+  label,
+  hint,
+  value,
+  onChange,
+  min,
+  max,
+  step,
+  disabled,
+}: {
+  label: string;
+  hint: string;
+  value: number;
+  onChange: (v: number) => void;
+  min: number;
+  max: number;
+  step: number;
+  disabled?: boolean;
+}) {
+  return (
+    <Field label={label} hint={hint}>
+      <Input
+        type="number"
+        min={min}
+        max={max}
+        step={step}
+        value={value}
+        onChange={(e) => onChange(Number(e.target.value))}
+        disabled={disabled}
+      />
+    </Field>
+  );
+}
+
 function EditNodeModal({
   node,
   onClose,
@@ -692,6 +728,13 @@ function EditNodeModal({
   const [provider, setProvider] = useState(PROVIDERS[0]);
   const [frameSkip, setFrameSkip] = useState(3);
   const [breachMode, setBreachMode] = useState<(typeof BREACH_MODES)[number]>("node_push");
+  // Per-node YOLO + scan/VLM tuning (the node hot-applies these without a restart).
+  const [personConf, setPersonConf] = useState(0.35);
+  const [itemConf, setItemConf] = useState(0.4);
+  const [itemEveryN, setItemEveryN] = useState(5);
+  const [scanIntervalSec, setScanIntervalSec] = useState(3);
+  const [framesPerClip, setFramesPerClip] = useState(1);
+  const [frameMaxDim, setFrameMaxDim] = useState(320);
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -702,6 +745,12 @@ function EditNodeModal({
     setProvider(node.provider);
     setFrameSkip(node.frame_skip);
     setBreachMode(node.breach_mode === "off" ? "off" : "node_push");
+    setPersonConf(node.person_conf);
+    setItemConf(node.item_conf);
+    setItemEveryN(node.item_every_n);
+    setScanIntervalSec(node.scan_interval_sec);
+    setFramesPerClip(node.frames_per_clip);
+    setFrameMaxDim(node.frame_max_dim);
     setError(null);
   }, [node]);
 
@@ -717,6 +766,12 @@ function EditNodeModal({
         provider,
         frame_skip: frameSkip,
         breach_mode: breachMode,
+        person_conf: personConf,
+        item_conf: itemConf,
+        item_every_n: itemEveryN,
+        scan_interval_sec: scanIntervalSec,
+        frames_per_clip: framesPerClip,
+        frame_max_dim: frameMaxDim,
       });
       onSaved();
     } catch (err) {
@@ -770,16 +825,89 @@ function EditNodeModal({
               ))}
             </Select>
           </Field>
-          <Field label="Frame skip" hint="Хэдэн кадр тутамд нэг шинжлэх (0–30)">
-            <Input
-              type="number"
-              min={0}
-              max={30}
-              value={frameSkip}
-              onChange={(e) => setFrameSkip(Number(e.target.value))}
-              disabled={saving}
-            />
-          </Field>
+          {/* YOLO detection tuning — the node hot-applies these live (no restart). */}
+          <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
+            <div className="text-sm font-medium">YOLO илрүүлэлт</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <NumSetting
+                label="Frame skip"
+                hint="Хэдэн кадр тутамд 1 шинжлэх (1–30). Бага = илүү FPS, өндөр ачаалал."
+                value={frameSkip}
+                onChange={setFrameSkip}
+                min={1}
+                max={30}
+                step={1}
+                disabled={saving}
+              />
+              <NumSetting
+                label="Бараа шалгах давтамж"
+                hint="Хэдэн шинжилгээ тутамд COCO бараа илрүүлэх (1–30)"
+                value={itemEveryN}
+                onChange={setItemEveryN}
+                min={1}
+                max={30}
+                step={1}
+                disabled={saving}
+              />
+              <NumSetting
+                label="Хүн илрүүлэх босго"
+                hint="YOLO хүний confidence (0.05–0.95). Бага = илүү мэдрэмжтэй."
+                value={personConf}
+                onChange={setPersonConf}
+                min={0.05}
+                max={0.95}
+                step={0.05}
+                disabled={saving}
+              />
+              <NumSetting
+                label="Бараа илрүүлэх босго"
+                hint="COCO барааны confidence (0.05–0.95)"
+                value={itemConf}
+                onChange={setItemConf}
+                min={0.05}
+                max={0.95}
+                step={0.05}
+                disabled={saving}
+              />
+            </div>
+          </div>
+
+          {/* Scan / VLM tuning — applied per breach on the node. */}
+          <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
+            <div className="text-sm font-medium">Шинжилгээ / VLM</div>
+            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+              <NumSetting
+                label="Шинжих давтамж (сек)"
+                hint="Хамгийн сэжигтэй хүнийг VLM-д хэдэн сек тутам өгөх (0.5–60)"
+                value={scanIntervalSec}
+                onChange={setScanIntervalSec}
+                min={0.5}
+                max={60}
+                step={0.5}
+                disabled={saving}
+              />
+              <NumSetting
+                label="VLM-д өгөх кадр"
+                hint="Клипээс VLM-д өгөх кадрын тоо (1–8). Их = илүү нарийвчлал, удаан."
+                value={framesPerClip}
+                onChange={setFramesPerClip}
+                min={1}
+                max={8}
+                step={1}
+                disabled={saving}
+              />
+              <NumSetting
+                label="VLM зургийн хэмжээ (px)"
+                hint="VLM-д өгөх кадрын дээд тал (160–1280)"
+                value={frameMaxDim}
+                onChange={setFrameMaxDim}
+                min={160}
+                max={1280}
+                step={32}
+                disabled={saving}
+              />
+            </div>
+          </div>
           <label className="flex items-center gap-2 text-sm">
             <input
               type="checkbox"

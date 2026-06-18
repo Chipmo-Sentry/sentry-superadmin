@@ -2227,7 +2227,7 @@
           "internal"
         ],
         "summary": "Create Live Alert From Node",
-        "description": "Node-push live alert. The AI node detected the breach, cut + VLM-verified\nthe clip locally, and POSTs the finished result here (outbound — reliable,\nunlike the old cloud→node /v1/cut-verify pull). camera_id = mediamtx_path.",
+        "description": "Node-push live alert. The AI node detected the breach, cut + VLM-verified\nthe clip locally, and POSTs the finished result here (outbound — reliable,\nunlike the old cloud→node /v1/cut-verify pull). camera_id = mediamtx_path.\n\nAuth: the paired AI node's own JWT (typ=ai_node) — the SAME token it uses for\nheartbeat/config. The node never holds a minted service token (pairing sets\nSENTRY_BACKEND_SERVICE_TOKEN to the ai_node JWT), so requiring one here 401'd\nevery node-push alert. Authenticating as the node also binds the post to a\nknown, active node row.",
         "operationId": "create_live_alert_from_node_api_v1_internal_live_alert_post",
         "parameters": [
           {
@@ -2267,6 +2267,59 @@
                 }
               }
             }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/internal/breach-cleared": {
+      "post": {
+        "tags": [
+          "internal"
+        ],
+        "summary": "Report Breach Cleared",
+        "description": "Observability for breaches the node dropped without alerting (VLM cleared\n/ clip-cut failed). Writes a risk_episode row so the miss is VISIBLE on the\nactivity timeline instead of silently lost. camera_id = mediamtx_path.\n\nAuth: the paired AI node's own JWT (typ=ai_node) — same as /live-alert.",
+        "operationId": "report_breach_cleared_api_v1_internal_breach_cleared_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
+        "requestBody": {
+          "required": true,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BreachClearedCreate"
+              }
+            }
+          }
+        },
+        "responses": {
+          "204": {
+            "description": "Successful Response"
           },
           "422": {
             "description": "Validation Error",
@@ -7143,10 +7196,10 @@
           },
           "risk_threshold": {
             "type": "number",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Risk Threshold",
-            "default": 11
+            "default": 11.0
           }
         },
         "type": "object",
@@ -7188,8 +7241,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7388,6 +7441,36 @@
             "type": "string",
             "title": "Breach Mode",
             "default": "node_push"
+          },
+          "person_conf": {
+            "type": "number",
+            "title": "Person Conf",
+            "default": 0.35
+          },
+          "item_conf": {
+            "type": "number",
+            "title": "Item Conf",
+            "default": 0.4
+          },
+          "item_every_n": {
+            "type": "integer",
+            "title": "Item Every N",
+            "default": 5
+          },
+          "scan_interval_sec": {
+            "type": "number",
+            "title": "Scan Interval Sec",
+            "default": 3.0
+          },
+          "frames_per_clip": {
+            "type": "integer",
+            "title": "Frames Per Clip",
+            "default": 1
+          },
+          "frame_max_dim": {
+            "type": "integer",
+            "title": "Frame Max Dim",
+            "default": 320
           }
         },
         "type": "object",
@@ -7416,7 +7499,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7447,6 +7530,18 @@
             ],
             "title": "Version"
           },
+          "yolo_model": {
+            "anyOf": [
+              {
+                "type": "string",
+                "maxLength": 48
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Yolo Model"
+          },
           "health": {
             "anyOf": [
               {
@@ -7465,8 +7560,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7478,7 +7573,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7490,7 +7585,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7502,8 +7597,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7515,7 +7610,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7527,7 +7622,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7550,8 +7645,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7563,7 +7658,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7575,7 +7670,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -7617,6 +7712,16 @@
             "anyOf": [
               {
                 "$ref": "#/components/schemas/VlmStatus"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "vlm_activity": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/VlmActivity"
               },
               {
                 "type": "null"
@@ -7669,6 +7774,18 @@
               }
             ],
             "title": "Breach Mode Effective"
+          },
+          "dropped_breach_ticks": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Dropped Breach Ticks"
           }
         },
         "type": "object",
@@ -7897,6 +8014,30 @@
             "type": "string",
             "title": "Breach Mode"
           },
+          "person_conf": {
+            "type": "number",
+            "title": "Person Conf"
+          },
+          "item_conf": {
+            "type": "number",
+            "title": "Item Conf"
+          },
+          "item_every_n": {
+            "type": "integer",
+            "title": "Item Every N"
+          },
+          "scan_interval_sec": {
+            "type": "number",
+            "title": "Scan Interval Sec"
+          },
+          "frames_per_clip": {
+            "type": "integer",
+            "title": "Frames Per Clip"
+          },
+          "frame_max_dim": {
+            "type": "integer",
+            "title": "Frame Max Dim"
+          },
           "created_at": {
             "anyOf": [
               {
@@ -7997,6 +8138,12 @@
           "provider",
           "frame_skip",
           "breach_mode",
+          "person_conf",
+          "item_conf",
+          "item_every_n",
+          "scan_interval_sec",
+          "frames_per_clip",
+          "frame_max_dim",
           "created_at",
           "cameras",
           "provider_effective",
@@ -8048,8 +8195,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 30,
-                "minimum": 0
+                "maximum": 30.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -8071,6 +8218,84 @@
               }
             ],
             "title": "Breach Mode"
+          },
+          "person_conf": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 0.95,
+                "minimum": 0.05
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Conf"
+          },
+          "item_conf": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 0.95,
+                "minimum": 0.05
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Conf"
+          },
+          "item_every_n": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 30.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Item Every N"
+          },
+          "scan_interval_sec": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 60.0,
+                "minimum": 0.5
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Scan Interval Sec"
+          },
+          "frames_per_clip": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 8.0,
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frames Per Clip"
+          },
+          "frame_max_dim": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "maximum": 1280.0,
+                "minimum": 160.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Max Dim"
           }
         },
         "type": "object",
@@ -8083,6 +8308,7 @@
           "browsing",
           "cart_pickup",
           "pocket_conceal",
+          "bag_conceal",
           "other"
         ],
         "title": "AlertCategory"
@@ -8099,8 +8325,8 @@
           },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "reasoning": {
@@ -8117,7 +8343,7 @@
           },
           "inference_latency_ms": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Inference Latency Ms"
           }
         },
@@ -8186,6 +8412,20 @@
           },
           "category": {
             "$ref": "#/components/schemas/AlertCategory"
+          },
+          "actions": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actions"
           },
           "confidence": {
             "type": "number",
@@ -8727,7 +8967,7 @@
           "duration_sec": {
             "type": "number",
             "title": "Duration Sec",
-            "default": 0
+            "default": 0.0
           }
         },
         "type": "object",
@@ -8736,6 +8976,89 @@
           "store_id"
         ],
         "title": "Body_upload_clip_api_v1_clips_post"
+      },
+      "BreachClearedCreate": {
+        "properties": {
+          "camera_id": {
+            "type": "string",
+            "minLength": 1,
+            "title": "Camera Id"
+          },
+          "reason": {
+            "type": "string",
+            "maxLength": 64,
+            "minLength": 1,
+            "title": "Reason"
+          },
+          "peak_risk_pct": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 100.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Peak Risk Pct"
+          },
+          "person_id": {
+            "anyOf": [
+              {
+                "type": "integer"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Person Id"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AlertCategory"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "confidence": {
+            "anyOf": [
+              {
+                "type": "number",
+                "maximum": 1.0,
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Confidence"
+          },
+          "triggered_behaviors": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "string"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Triggered Behaviors"
+          }
+        },
+        "type": "object",
+        "required": [
+          "camera_id",
+          "reason"
+        ],
+        "title": "BreachClearedCreate",
+        "description": "POST /api/v1/internal/breach-cleared — observability for breaches the node\ndetected but did NOT turn into an alert (VLM cleared it as browsing / low\nconfidence, or the clip-cut failed). Without this the drop is silent: the\noperator sees nothing and can't tell a miss from \"nothing happened\". We log\nit on the activity timeline so the detection funnel is visible + tunable."
       },
       "CameraCreate": {
         "properties": {
@@ -8776,8 +9099,8 @@
           },
           "stage2_threshold": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Stage2 Threshold",
             "default": 0.5
           },
@@ -8800,10 +9123,10 @@
           },
           "risk_threshold": {
             "type": "number",
-            "maximum": 100,
-            "minimum": 0,
+            "maximum": 100.0,
+            "minimum": 0.0,
             "title": "Risk Threshold",
-            "default": 11
+            "default": 11.0
           }
         },
         "type": "object",
@@ -8825,7 +9148,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -8842,6 +9165,30 @@
             ],
             "title": "Status",
             "default": "ok"
+          },
+          "frame_skip": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 1.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Frame Skip"
+          },
+          "persons": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Persons"
           }
         },
         "type": "object",
@@ -8910,7 +9257,7 @@
           "risk_threshold": {
             "type": "number",
             "title": "Risk Threshold",
-            "default": 11
+            "default": 11.0
           }
         },
         "type": "object",
@@ -8970,8 +9317,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 1,
-                "minimum": 0
+                "maximum": 1.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -9006,8 +9353,8 @@
             "anyOf": [
               {
                 "type": "number",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -9121,7 +9468,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -9133,7 +9480,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -9197,9 +9544,9 @@
           },
           "weight": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Weight",
-            "default": 1
+            "default": 1.0
           },
           "category": {
             "type": "string",
@@ -9208,8 +9555,8 @@
           },
           "level": {
             "type": "integer",
-            "maximum": 4,
-            "minimum": 1,
+            "maximum": 4.0,
+            "minimum": 1.0,
             "title": "Level",
             "default": 1
           }
@@ -9252,7 +9599,7 @@
             "anyOf": [
               {
                 "type": "number",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -9286,8 +9633,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 4,
-                "minimum": 1
+                "maximum": 4.0,
+                "minimum": 1.0
               },
               {
                 "type": "null"
@@ -9781,8 +10128,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100000,
-                "minimum": 0
+                "maximum": 100000.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -9981,10 +10328,24 @@
           "category": {
             "$ref": "#/components/schemas/AlertCategory"
           },
+          "actions": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/AlertCategory"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Actions"
+          },
           "confidence": {
             "type": "number",
-            "maximum": 1,
-            "minimum": 0,
+            "maximum": 1.0,
+            "minimum": 0.0,
             "title": "Confidence"
           },
           "reasoning": {
@@ -10001,7 +10362,7 @@
           },
           "inference_latency_ms": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Inference Latency Ms"
           },
           "clip_b64": {
@@ -10011,12 +10372,12 @@
           },
           "file_size_bytes": {
             "type": "integer",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "File Size Bytes"
           },
           "duration_sec_clip": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Duration Sec Clip"
           },
           "captured_at": {
@@ -10150,7 +10511,7 @@
           "fps_inference": {
             "type": "number",
             "title": "Fps Inference",
-            "default": 0
+            "default": 0.0
           },
           "tracks": {
             "items": {
@@ -10215,13 +10576,13 @@
           "det_confidence": {
             "type": "number",
             "title": "Det Confidence",
-            "default": 0
+            "default": 0.0
           },
           "risk_pct": {
             "type": "number",
-            "minimum": 0,
+            "minimum": 0.0,
             "title": "Risk Pct",
-            "default": 0
+            "default": 0.0
           },
           "color": {
             "type": "string",
@@ -10660,7 +11021,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "exclusiveMinimum": 0
+                "exclusiveMinimum": 0.0
               },
               {
                 "type": "null"
@@ -10672,7 +11033,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "exclusiveMinimum": 0
+                "exclusiveMinimum": 0.0
               },
               {
                 "type": "null"
@@ -10694,7 +11055,7 @@
           },
           "max_redemptions": {
             "type": "integer",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Max Redemptions",
             "default": 1
           },
@@ -11035,8 +11396,8 @@
           },
           "k": {
             "type": "integer",
-            "maximum": 10,
-            "minimum": 1,
+            "maximum": 10.0,
+            "minimum": 1.0,
             "title": "K",
             "default": 3
           }
@@ -11309,7 +11670,7 @@
         "properties": {
           "amount_mnt": {
             "type": "integer",
-            "exclusiveMinimum": 0,
+            "exclusiveMinimum": 0.0,
             "title": "Amount Mnt"
           },
           "note": {
@@ -11465,6 +11826,43 @@
         ],
         "title": "ValidationError"
       },
+      "VlmActivity": {
+        "properties": {
+          "count": {
+            "type": "integer",
+            "minimum": 0.0,
+            "title": "Count",
+            "default": 0
+          },
+          "last_ago_sec": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Ago Sec"
+          },
+          "last_latency_ms": {
+            "anyOf": [
+              {
+                "type": "integer",
+                "minimum": 0.0
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Last Latency Ms"
+          }
+        },
+        "type": "object",
+        "title": "VlmActivity",
+        "description": "VLM verify run history — proves the VLM HAS run on the GPU even though it's\nevent-driven (breach-only) and idle most of the time."
+      },
       "VlmStatus": {
         "properties": {
           "loaded": {
@@ -11487,7 +11885,7 @@
             "anyOf": [
               {
                 "type": "integer",
-                "minimum": 0
+                "minimum": 0.0
               },
               {
                 "type": "null"
@@ -11499,8 +11897,8 @@
             "anyOf": [
               {
                 "type": "integer",
-                "maximum": 100,
-                "minimum": 0
+                "maximum": 100.0,
+                "minimum": 0.0
               },
               {
                 "type": "null"

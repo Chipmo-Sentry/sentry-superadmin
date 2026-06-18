@@ -402,8 +402,38 @@ export interface paths {
          * @description Node-push live alert. The AI node detected the breach, cut + VLM-verified
          *     the clip locally, and POSTs the finished result here (outbound — reliable,
          *     unlike the old cloud→node /v1/cut-verify pull). camera_id = mediamtx_path.
+         *
+         *     Auth: the paired AI node's own JWT (typ=ai_node) — the SAME token it uses for
+         *     heartbeat/config. The node never holds a minted service token (pairing sets
+         *     SENTRY_BACKEND_SERVICE_TOKEN to the ai_node JWT), so requiring one here 401'd
+         *     every node-push alert. Authenticating as the node also binds the post to a
+         *     known, active node row.
          */
         post: operations["create_live_alert_from_node_api_v1_internal_live_alert_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/internal/breach-cleared": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Report Breach Cleared
+         * @description Observability for breaches the node dropped without alerting (VLM cleared
+         *     / clip-cut failed). Writes a risk_episode row so the miss is VISIBLE on the
+         *     activity timeline instead of silently lost. camera_id = mediamtx_path.
+         *
+         *     Auth: the paired AI node's own JWT (typ=ai_node) — same as /live-alert.
+         */
+        post: operations["report_breach_cleared_api_v1_internal_breach_cleared_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1585,6 +1615,36 @@ export interface components {
              * @default node_push
              */
             breach_mode: string;
+            /**
+             * Person Conf
+             * @default 0.35
+             */
+            person_conf: number;
+            /**
+             * Item Conf
+             * @default 0.4
+             */
+            item_conf: number;
+            /**
+             * Item Every N
+             * @default 5
+             */
+            item_every_n: number;
+            /**
+             * Scan Interval Sec
+             * @default 3
+             */
+            scan_interval_sec: number;
+            /**
+             * Frames Per Clip
+             * @default 1
+             */
+            frames_per_clip: number;
+            /**
+             * Frame Max Dim
+             * @default 320
+             */
+            frame_max_dim: number;
         };
         /**
          * AiNodeHeartbeat
@@ -1599,6 +1659,8 @@ export interface components {
             active_cameras?: number | null;
             /** Version */
             version?: string | null;
+            /** Yolo Model */
+            yolo_model?: string | null;
             /** Health */
             health?: {
                 [key: string]: boolean;
@@ -1628,6 +1690,7 @@ export interface components {
             /** Components */
             components?: components["schemas"]["ComponentUsage"][] | null;
             vlm?: components["schemas"]["VlmStatus"] | null;
+            vlm_activity?: components["schemas"]["VlmActivity"] | null;
             /** Provider Effective */
             provider_effective?: string | null;
             /** Provider Ready */
@@ -1636,6 +1699,8 @@ export interface components {
             provider_error?: string | null;
             /** Breach Mode Effective */
             breach_mode_effective?: string | null;
+            /** Dropped Breach Ticks */
+            dropped_breach_ticks?: number | null;
         };
         /**
          * AiNodePairRequest
@@ -1707,6 +1772,18 @@ export interface components {
             frame_skip: number;
             /** Breach Mode */
             breach_mode: string;
+            /** Person Conf */
+            person_conf: number;
+            /** Item Conf */
+            item_conf: number;
+            /** Item Every N */
+            item_every_n: number;
+            /** Scan Interval Sec */
+            scan_interval_sec: number;
+            /** Frames Per Clip */
+            frames_per_clip: number;
+            /** Frame Max Dim */
+            frame_max_dim: number;
             /** Created At */
             created_at: string | null;
             /**
@@ -1757,12 +1834,24 @@ export interface components {
             frame_skip?: number | null;
             /** Breach Mode */
             breach_mode?: ("node_push" | "off") | null;
+            /** Person Conf */
+            person_conf?: number | null;
+            /** Item Conf */
+            item_conf?: number | null;
+            /** Item Every N */
+            item_every_n?: number | null;
+            /** Scan Interval Sec */
+            scan_interval_sec?: number | null;
+            /** Frames Per Clip */
+            frames_per_clip?: number | null;
+            /** Frame Max Dim */
+            frame_max_dim?: number | null;
         };
         /**
          * AlertCategory
          * @enum {string}
          */
-        AlertCategory: "browsing" | "cart_pickup" | "pocket_conceal" | "other";
+        AlertCategory: "browsing" | "cart_pickup" | "pocket_conceal" | "bag_conceal" | "other";
         /**
          * AlertCreateInternal
          * @description POST /api/v1/internal/alerts — sentry-ai service posts this.
@@ -1810,6 +1899,8 @@ export interface components {
             /** Camera Id */
             camera_id: string | null;
             category: components["schemas"]["AlertCategory"];
+            /** Actions */
+            actions?: string[] | null;
             /** Confidence */
             confidence: number;
             /** Reasoning */
@@ -2035,6 +2126,29 @@ export interface components {
              */
             duration_sec: number;
         };
+        /**
+         * BreachClearedCreate
+         * @description POST /api/v1/internal/breach-cleared — observability for breaches the node
+         *     detected but did NOT turn into an alert (VLM cleared it as browsing / low
+         *     confidence, or the clip-cut failed). Without this the drop is silent: the
+         *     operator sees nothing and can't tell a miss from "nothing happened". We log
+         *     it on the activity timeline so the detection funnel is visible + tunable.
+         */
+        BreachClearedCreate: {
+            /** Camera Id */
+            camera_id: string;
+            /** Reason */
+            reason: string;
+            /** Peak Risk Pct */
+            peak_risk_pct?: number | null;
+            /** Person Id */
+            person_id?: number | null;
+            category?: components["schemas"]["AlertCategory"] | null;
+            /** Confidence */
+            confidence?: number | null;
+            /** Triggered Behaviors */
+            triggered_behaviors?: string[] | null;
+        };
         /** CameraCreate */
         CameraCreate: {
             /**
@@ -2087,6 +2201,10 @@ export interface components {
              * @enum {string}
              */
             status: "ok" | "stalled" | "error";
+            /** Frame Skip */
+            frame_skip?: number | null;
+            /** Persons */
+            persons?: number | null;
         };
         /**
          * CameraPublic
@@ -2514,6 +2632,8 @@ export interface components {
             /** Camera Id */
             camera_id: string;
             category: components["schemas"]["AlertCategory"];
+            /** Actions */
+            actions?: components["schemas"]["AlertCategory"][] | null;
             /** Confidence */
             confidence: number;
             /** Reasoning */
@@ -3109,6 +3229,22 @@ export interface components {
             msg: string;
             /** Error Type */
             type: string;
+        };
+        /**
+         * VlmActivity
+         * @description VLM verify run history — proves the VLM HAS run on the GPU even though it's
+         *     event-driven (breach-only) and idle most of the time.
+         */
+        VlmActivity: {
+            /**
+             * Count
+             * @default 0
+             */
+            count: number;
+            /** Last Ago Sec */
+            last_ago_sec?: number | null;
+            /** Last Latency Ms */
+            last_latency_ms?: number | null;
         };
         /**
          * VlmStatus
@@ -4105,6 +4241,39 @@ export interface operations {
                 content: {
                     "application/json": components["schemas"]["AlertPublic"];
                 };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_breach_cleared_api_v1_internal_breach_cleared_post: {
+        parameters: {
+            query?: never;
+            header?: {
+                authorization?: string | null;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BreachClearedCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
             };
             /** @description Validation Error */
             422: {
