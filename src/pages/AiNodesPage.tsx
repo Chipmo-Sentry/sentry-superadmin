@@ -31,15 +31,13 @@ import { NodeMetricsChart } from "@/components/NodeMetricsChart";
 import { admin } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
-// VLM providers OFFERED in the UI = those actually pulled/runnable on the node's
-// Ollama today (verified 2026-06-17: qwen3-vl:4b-instruct + minicpm-v:8b). Default
-// first. The backend registry (sentry-ai providers/factory.py) still knows two more
-// that are NOT offered here because they can't run on this node:
-//   - qwen3-vl-vllm  : Linux-GPU scale path, needs a separate vLLM server (none yet)
-//   - qwen2.5-vl-7b  : deprecated (ADR-0026) rollback, model not pulled
-// Omitting them stops an operator from picking a provider that would fail to apply.
-// Re-add a name here once its model is installed / a vLLM host exists.
-const PROVIDERS = ["qwen3-vl-4b", "minicpm-v-2.6"];
+// VLM providers OFFERED in the UI = those actually pulled/runnable on a node.
+// qwen3-vl-4b + minicpm-v-2.6 run on the Ollama nodes (verified 2026-06-17).
+// qwen3-vl-vllm is the Linux-GPU scale path (separate vLLM server) — now live on
+// the vast RTX 5090 pilot node, so it's offered here too (2026-06-19).
+// Still NOT offered: qwen2.5-vl-7b (deprecated ADR-0026 rollback, model not pulled).
+// Omitting unavailable names stops an operator from picking one that fails to apply.
+const PROVIDERS = ["qwen3-vl-4b", "qwen3-vl-vllm", "minicpm-v-2.6"];
 
 // Live-breach topology (central control, ADR-0026) — must match the backend
 // AiNodeUpdate.breach_mode literals + sentry-ai runtime_config _BREACH_MODES.
