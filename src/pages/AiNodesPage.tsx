@@ -726,12 +726,8 @@ function EditNodeModal({
   const [name, setName] = useState("");
   const [enabled, setEnabled] = useState(true);
   const [provider, setProvider] = useState(PROVIDERS[0]);
-  const [frameSkip, setFrameSkip] = useState(3);
   const [breachMode, setBreachMode] = useState<(typeof BREACH_MODES)[number]>("node_push");
-  // Per-node YOLO + scan/VLM tuning (the node hot-applies these without a restart).
-  const [personConf, setPersonConf] = useState(0.35);
-  const [itemConf, setItemConf] = useState(0.4);
-  const [itemEveryN, setItemEveryN] = useState(5);
+  // Per-node scan/VLM tuning (the node hot-applies these without a restart).
   const [scanIntervalSec, setScanIntervalSec] = useState(3);
   const [framesPerClip, setFramesPerClip] = useState(1);
   const [frameMaxDim, setFrameMaxDim] = useState(320);
@@ -743,11 +739,7 @@ function EditNodeModal({
     setName(node.name ?? "");
     setEnabled(node.enabled);
     setProvider(node.provider);
-    setFrameSkip(node.frame_skip);
     setBreachMode(node.breach_mode === "off" ? "off" : "node_push");
-    setPersonConf(node.person_conf);
-    setItemConf(node.item_conf);
-    setItemEveryN(node.item_every_n);
     setScanIntervalSec(node.scan_interval_sec);
     setFramesPerClip(node.frames_per_clip);
     setFrameMaxDim(node.frame_max_dim);
@@ -764,11 +756,7 @@ function EditNodeModal({
         name: name.trim() || null,
         enabled,
         provider,
-        frame_skip: frameSkip,
         breach_mode: breachMode,
-        person_conf: personConf,
-        item_conf: itemConf,
-        item_every_n: itemEveryN,
         scan_interval_sec: scanIntervalSec,
         frames_per_clip: framesPerClip,
         frame_max_dim: frameMaxDim,
@@ -825,53 +813,6 @@ function EditNodeModal({
               ))}
             </Select>
           </Field>
-          {/* YOLO detection tuning — the node hot-applies these live (no restart). */}
-          <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
-            <div className="text-sm font-medium">YOLO илрүүлэлт</div>
-            <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
-              <NumSetting
-                label="Frame skip"
-                hint="Хэдэн кадр тутамд 1 шинжлэх (1–30). Бага = илүү FPS, өндөр ачаалал."
-                value={frameSkip}
-                onChange={setFrameSkip}
-                min={1}
-                max={30}
-                step={1}
-                disabled={saving}
-              />
-              <NumSetting
-                label="Бараа шалгах давтамж"
-                hint="Хэдэн шинжилгээ тутамд COCO бараа илрүүлэх (1–30)"
-                value={itemEveryN}
-                onChange={setItemEveryN}
-                min={1}
-                max={30}
-                step={1}
-                disabled={saving}
-              />
-              <NumSetting
-                label="Хүн илрүүлэх босго"
-                hint="YOLO хүний confidence (0.05–0.95). Бага = илүү мэдрэмжтэй."
-                value={personConf}
-                onChange={setPersonConf}
-                min={0.05}
-                max={0.95}
-                step={0.05}
-                disabled={saving}
-              />
-              <NumSetting
-                label="Бараа илрүүлэх босго"
-                hint="COCO барааны confidence (0.05–0.95)"
-                value={itemConf}
-                onChange={setItemConf}
-                min={0.05}
-                max={0.95}
-                step={0.05}
-                disabled={saving}
-              />
-            </div>
-          </div>
-
           {/* Scan / VLM tuning — applied per breach on the node. */}
           <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
             <div className="text-sm font-medium">Шинжилгээ / VLM</div>
