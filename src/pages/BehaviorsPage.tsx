@@ -17,14 +17,20 @@ import {
 } from "@chipmo-sentry/ui-kit";
 import type { CellStyle, ColDef } from "ag-grid-community";
 import {
+  AlertTriangle,
   Brain,
   CheckCircle2,
   ChevronDown,
   ChevronRight,
   Clock,
+  Info,
   ListOrdered,
+  type LucideIcon,
   Plus,
+  RotateCcw,
   Save,
+  ShieldAlert,
+  SlidersHorizontal,
   Trash2,
 } from "lucide-react";
 import { useEffect, useMemo, useState } from "react";
@@ -50,15 +56,82 @@ const LEVEL_TITLE: Record<number, string> = Object.fromEntries(
   LEVELS.map((l) => [l.n, l.title]),
 );
 
-// Global engine knobs (mirror sentry-ai behavior.DEFAULT_ENGINE) with Mongolian
-// labels + sensible step sizes for the number inputs.
-const ENGINE_FIELDS: { key: string; label: string; step: number; hint: string }[] = [
-  { key: "smooth_frames", label: "Тогтворжилт", step: 1, hint: "Оноо өгөхөөс өмнө дохио дараалан илрэх frame (давтамж)" },
-  { key: "decay_idle", label: "Бууралт (сул)", step: 0.005, hint: "Бараа барихгүй үед оноо frame тутам ийш үржинэ (0–1)" },
-  { key: "decay_holding", label: "Бууралт (барьсан)", step: 0.001, hint: "Бараа барьсан үед оноо удаан буурна (0–1)" },
-  { key: "sequence_window_sec", label: "Дарааллын цонх (сек)", step: 5, hint: "Үйлдлүүд энэ хугацаанд дараалбал bonus" },
-  { key: "loiter_radius_frac", label: "Зогсолтын радиус", step: 0.05, hint: "Нэг байранд тооцох радиус (биеийн өндрийн харьцаа)" },
-  { key: "stale_track_sec", label: "Track хадгалах (сек)", step: 1, hint: "Хүн алга болсны дараа төлөвийг хадгалах хугацаа" },
+// Global engine knobs (mirror sentry-ai behavior.DEFAULT_ENGINE), grouped + with
+// plain-language help so an operator understands what each knob actually does.
+interface EngineField {
+  key: string;
+  label: string;
+  unit: string;
+  step: number;
+  min: number;
+  max: number;
+  help: string;
+}
+const ENGINE_GROUPS: { title: string; fields: EngineField[] }[] = [
+  {
+    title: "Мэдрэмж ба тогтворжилт",
+    fields: [
+      {
+        key: "smooth_frames",
+        label: "Тогтворжилт",
+        unit: "кадр",
+        step: 1,
+        min: 1,
+        max: 10,
+        help: "Дохио хэдэн кадр дараалан тогтвортой гарвал оноо өгөх вэ. Их = тогтвортой (ложно-эерэг ↓), бага = илүү мэдрэмжтэй.",
+      },
+      {
+        key: "decay_idle",
+        label: "Оноо бууралт — сул үед",
+        unit: "×/кадр",
+        step: 0.005,
+        min: 0.5,
+        max: 1,
+        help: "Хүн юм хийхгүй үед суспиц оноо кадр тутам энэ коэффициентээр буурна. 1-д ойр = удаан мартана, бага = хурдан тэгрэнэ.",
+      },
+      {
+        key: "decay_holding",
+        label: "Оноо бууралт — бараа барьсан үед",
+        unit: "×/кадр",
+        step: 0.005,
+        min: 0.5,
+        max: 1,
+        help: "Бараа барьсан хэвээр үед оноо буурах хурд. 1 = огт буурахгүй (барьсаар бол сэжигтэй хэвээр).",
+      },
+    ],
+  },
+  {
+    title: "Хугацаа ба орон зай",
+    fields: [
+      {
+        key: "sequence_window_sec",
+        label: "Дарааллын цонх",
+        unit: "сек",
+        step: 5,
+        min: 5,
+        max: 300,
+        help: "Зан үйлүүд зөв дарааллаар (харах → авах → нуух) энэ хугацаанд гарвал нэмэлт bonus оноо өгнө.",
+      },
+      {
+        key: "loiter_radius_frac",
+        label: "Зогсолтын радиус",
+        unit: "× өндөр",
+        step: 0.05,
+        min: 0.05,
+        max: 1,
+        help: "«Удаан зогсох»-ыг тооцоход хүн нэг байранд хэр ойр байх ёстой — биеийн өндрийн харьцаагаар.",
+      },
+      {
+        key: "stale_track_sec",
+        label: "Track хадгалах",
+        unit: "сек",
+        step: 1,
+        min: 1,
+        max: 120,
+        help: "Хүн харагдахаа болиод хэдэн секунд хүртэл төлвийг хадгалах вэ. Тавиурын ард ороод гарвал үргэлжилнэ.",
+      },
+    ],
+  },
 ];
 
 // Friendly Mongolian labels for per-detector params. Unknown keys fall back to
@@ -644,6 +717,14 @@ function GlobalConfigSection({
     }
   }
 
+  /** Drop unsaved edits, snapping every field back to the last-saved server values. */
+  function revert() {
+    setGreenMax(data.thresholds.green_max ?? DEF_GREEN);
+    setYellowMax(data.thresholds.yellow_max ?? DEF_YELLOW);
+    setHighMax(data.thresholds.high_max ?? DEF_HIGH);
+    setEngine({ ...(data.engine ?? {}) });
+  }
+
   return (
     <Card className="mt-6">
       <CardHeader>
@@ -659,92 +740,147 @@ function GlobalConfigSection({
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
+              <SlidersHorizontal className="h-4 w-4 text-[var(--color-primary)]" />
               Глобал тохиргоо — эрсдэлийн босго ба engine
             </CardTitle>
             <CardDescription className="mt-1">
-              Бүх камерт хамаарах түвшний босго + engine параметрүүд. Цаг ховор
-              өөрчилдөг тул тусдаа хадгална.
+              Бүх камерт нэг ижил үйлчилнэ. Нэг удаа тааруулаад орхино — оноо
+              хэрхэн өсөж, хэдэн оноонд сэрэмжлүүлэг үүсэхийг энд тодорхойлно.
             </CardDescription>
           </div>
           {dirty && <Badge tone="warning">Хадгалаагүй</Badge>}
         </button>
       </CardHeader>
       {open && (
-        <CardContent>
-          {/* 4-level thresholds (absolute 0-100) */}
-          <div className="mb-2 text-sm font-medium">Эрсдэлийн түвшний босго (0–100)</div>
-          <div className="grid gap-4 sm:grid-cols-4">
-            <LevelInput
-              color="bg-green-500"
-              label={ll.LOW ?? "Бага"}
-              hint={`оноо < ${greenMax}`}
-              value={greenMax}
-              onChange={setGreenMax}
+        <CardContent className="space-y-8">
+          {/* Plain-language mental model — what the score IS, in one breath. */}
+          <div className="flex gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/40 p-4">
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-primary)]" />
+            <p className="text-sm leading-relaxed text-[var(--color-muted-foreground)]">
+              Систем камер дээрх{" "}
+              <strong className="font-medium text-[var(--color-foreground)]">
+                хүн бүрд 0–100 «суспиц оноо»
+              </strong>{" "}
+              өгнө: сэжигтэй зан илрэх тутам өснө, тайван үед аажмаар буурна. Доорх{" "}
+              <strong className="font-medium text-[var(--color-foreground)]">босго</strong>{" "}
+              тэр оноог түвшин болгон хувааж,{" "}
+              <strong className="font-medium text-[var(--color-foreground)]">Ноцтой</strong>{" "}
+              түвшинд хүрэхэд автомат сэрэмжлүүлэг үүснэ.{" "}
+              <strong className="font-medium text-[var(--color-foreground)]">Engine</strong>{" "}
+              хэсэг нь оноо хэрхэн өсөж, буурахыг нарийн тохируулна.
+            </p>
+          </div>
+
+          {/* Risk thresholds — live visual band + 3 boundary inputs + alert note. */}
+          <section>
+            <SectionTitle
+              icon={ShieldAlert}
+              title="Эрсдэлийн түвшин ба сэрэмжлүүлгийн босго"
             />
-            <LevelInput
-              color="bg-yellow-500"
-              label={ll.MEDIUM ?? "Дунд"}
-              hint={`${greenMax} ≤ оноо < ${yellowMax}`}
-              value={yellowMax}
-              onChange={setYellowMax}
+            <ThresholdBar
+              green={greenMax}
+              yellow={yellowMax}
+              high={highMax}
+              labels={ll}
             />
-            <LevelInput
-              color="bg-orange-500"
-              label={ll.HIGH ?? "Өндөр"}
-              hint={`${yellowMax} ≤ оноо < ${highMax}`}
-              value={highMax}
-              onChange={setHighMax}
-            />
-            <div className="rounded-md border border-[var(--color-border)] p-3">
-              <div className="mb-1 flex items-center gap-2">
-                <span className="inline-block h-2.5 w-2.5 rounded-full bg-red-600" />
-                <span className="text-sm font-medium">{ll.CRITICAL ?? "Ноцтой"}</span>
-              </div>
-              <p className="text-xs text-[var(--color-muted-foreground)]">
-                оноо ≥ {highMax} → автомат clip + VLM шалгалт + alert
+            <div className="mt-4 grid gap-3 sm:grid-cols-3">
+              <BoundaryInput
+                label="Бага → Дунд"
+                value={greenMax}
+                onChange={setGreenMax}
+                disabled={saving}
+              />
+              <BoundaryInput
+                label="Дунд → Өндөр"
+                value={yellowMax}
+                onChange={setYellowMax}
+                disabled={saving}
+              />
+              <BoundaryInput
+                label="Өндөр → Ноцтой"
+                value={highMax}
+                onChange={setHighMax}
+                disabled={saving}
+                alert
+              />
+            </div>
+            <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/5 p-3">
+              <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
+              <p className="text-xs leading-relaxed text-[var(--color-muted-foreground)]">
+                Оноо{" "}
+                <strong className="font-medium text-[var(--color-foreground)]">
+                  {highMax}
+                </strong>
+                -д хүрсэн хүн илэрвэл → автоматаар бичлэг (clip) огтлогдож, AI (VLM)
+                давхар шалгаж,{" "}
+                <strong className="font-medium text-[var(--color-foreground)]">
+                  сэрэмжлүүлэг
+                </strong>{" "}
+                үүснэ. Энэ тоог{" "}
+                <strong className="font-medium text-[var(--color-foreground)]">
+                  бууруулбал
+                </strong>{" "}
+                илүү мэдрэмжтэй (олон alert, VLM зардал ↑),{" "}
+                <strong className="font-medium text-[var(--color-foreground)]">
+                  өсгөвөл
+                </strong>{" "}
+                хатуу (цөөн alert, алдах эрсдэл ↑).
               </p>
             </div>
-          </div>
-          {!thresholdValid && (
-            <p className="mt-3 text-xs text-[var(--color-danger)]">
-              Босгууд өсөх дарааллаар байх ёстой: Бага &lt; Дунд &lt; Өндөр.
+            {!thresholdValid && (
+              <p className="mt-3 text-xs text-[var(--color-danger)]">
+                Босгууд өсөх дарааллаар байх ёстой: Бага &lt; Дунд &lt; Өндөр.
+              </p>
+            )}
+          </section>
+
+          {/* Engine knobs — grouped + plain-language help. Advanced/expert. */}
+          <section>
+            <SectionTitle
+              icon={SlidersHorizontal}
+              title="Engine нарийн тохиргоо"
+              suffix="мэргэжлийн"
+            />
+            <p className="-mt-1 mb-4 text-xs text-[var(--color-muted-foreground)]">
+              Анхдагч утгууд зөв тохируулагдсан. Зөвхөн илрүүлэлтийг нарийн
+              тааруулах шаардлагатай үед өөрчилнө.
             </p>
-          )}
+            <div className="space-y-5">
+              {ENGINE_GROUPS.map((group) => (
+                <div key={group.title}>
+                  <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                    {group.title}
+                  </div>
+                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+                    {group.fields.map((f) => (
+                      <EngineKnob
+                        key={f.key}
+                        field={f}
+                        value={engine[f.key]}
+                        onChange={(v) =>
+                          setEngine((prev) => ({ ...prev, [f.key]: v }))
+                        }
+                        disabled={saving}
+                      />
+                    ))}
+                  </div>
+                </div>
+              ))}
+            </div>
+          </section>
 
-          {/* Engine knobs */}
-          <div className="mb-2 mt-6 text-sm font-medium">Engine нарийн тохиргоо</div>
-          <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-            {ENGINE_FIELDS.map((f) => (
-              <div
-                key={f.key}
-                className="rounded-md border border-[var(--color-border)] p-3"
-              >
-                <div className="text-sm font-medium">{f.label}</div>
-                <p className="mb-2 text-xs text-[var(--color-muted-foreground)]">
-                  {f.hint}
-                </p>
-                <input
-                  type="number"
-                  step={f.step}
-                  min={0}
-                  value={engine[f.key] ?? ""}
-                  onChange={(e) =>
-                    setEngine((prev) => ({
-                      ...prev,
-                      [f.key]: Number(e.target.value) || 0,
-                    }))
-                  }
-                  className="w-28 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
-                />
-              </div>
-            ))}
-          </div>
-
-          <div className="mt-4 flex items-center justify-end gap-3">
+          {/* Save / revert bar */}
+          <div className="flex items-center justify-end gap-3 border-t border-[var(--color-border)] pt-4">
             {savedAt && !dirty && (
-              <span className="text-xs text-[var(--color-success)]">
-                Хадгалагдсан · {savedAt}
+              <span className="mr-auto text-xs text-[var(--color-success)]">
+                ✓ Хадгалагдсан · {savedAt}
               </span>
+            )}
+            {dirty && (
+              <Button size="sm" variant="ghost" onClick={revert} disabled={saving}>
+                <RotateCcw className="h-4 w-4" />
+                Буцаах
+              </Button>
             )}
             <Button
               size="sm"
@@ -752,7 +888,7 @@ function GlobalConfigSection({
               disabled={!dirty || !thresholdValid || saving}
             >
               <Save className="h-4 w-4" />
-              {saving ? "Хадгалж байна..." : "Глобал тохиргоо хадгалах"}
+              {saving ? "Хадгалж байна..." : "Хадгалах"}
             </Button>
           </div>
         </CardContent>
@@ -901,38 +1037,154 @@ function AddCriterionModal({
   );
 }
 
-function LevelInput({
-  color,
-  label,
-  hint,
-  value,
-  onChange,
+/** Small section heading with an icon + optional "advanced" pill. */
+function SectionTitle({
+  icon: Icon,
+  title,
+  suffix,
 }: {
-  color: string;
-  label: string;
-  hint: string;
-  value: number;
-  onChange: (v: number) => void;
+  icon: LucideIcon;
+  title: string;
+  suffix?: string;
 }) {
   return (
-    <div className="rounded-md border border-[var(--color-border)] p-3">
-      <div className="mb-1 flex items-center gap-2">
-        <span className={`inline-block h-2.5 w-2.5 rounded-full ${color}`} />
-        <span className="text-sm font-medium">{label}</span>
-      </div>
-      <p className="text-xs text-[var(--color-muted-foreground)]">{hint}</p>
-      <div className="mt-2 flex items-center gap-1">
-        <span className="text-xs text-[var(--color-muted-foreground)]">
-          Босго ≥
+    <div className="mb-3 flex items-center gap-2">
+      <Icon className="h-4 w-4 text-[var(--color-primary)]" />
+      <h3 className="text-sm font-semibold">{title}</h3>
+      {suffix && (
+        <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+          {suffix}
         </span>
+      )}
+    </div>
+  );
+}
+
+/** Live 0–100 risk band — 4 colored segments sized by the current thresholds, so
+ * the operator SEES the ranges (and the alert zone) update as they type. */
+function ThresholdBar({
+  green,
+  yellow,
+  high,
+  labels,
+}: {
+  green: number;
+  yellow: number;
+  high: number;
+  labels: Record<string, string>;
+}) {
+  const segs = [
+    { name: labels.LOW ?? "Бага", range: `0–${green}`, w: green, fill: "bg-green-500/15", text: "text-green-400" },
+    { name: labels.MEDIUM ?? "Дунд", range: `${green}–${yellow}`, w: yellow - green, fill: "bg-yellow-500/15", text: "text-yellow-400" },
+    { name: labels.HIGH ?? "Өндөр", range: `${yellow}–${high}`, w: high - yellow, fill: "bg-orange-500/15", text: "text-orange-400" },
+    { name: labels.CRITICAL ?? "Ноцтой", range: `≥ ${high}`, w: 100 - high, fill: "bg-red-500/20", text: "text-red-400" },
+  ];
+  return (
+    <div className="flex h-20 w-full overflow-hidden rounded-lg border border-[var(--color-border)]">
+      {segs.map((s, i) => (
+        <div
+          key={i}
+          style={{ flexGrow: Math.max(s.w, 4) }}
+          className={`flex min-w-[64px] basis-0 flex-col items-center justify-center gap-0.5 px-1 text-center ${s.fill} ${
+            i > 0 ? "border-l border-[var(--color-border)]" : ""
+          }`}
+        >
+          <span className={`text-xs font-medium ${s.text}`}>{s.name}</span>
+          <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
+            {s.range}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** One threshold boundary input ("X → Y shift score"). The alert boundary
+ * (Өндөр → Ноцтой) is visually flagged red since it gates clip + VLM + alert. */
+function BoundaryInput({
+  label,
+  value,
+  onChange,
+  disabled,
+  alert,
+}: {
+  label: string;
+  value: number;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+  alert?: boolean;
+}) {
+  return (
+    <div
+      className={`rounded-lg border p-3 ${
+        alert ? "border-red-500/40 bg-red-500/5" : "border-[var(--color-border)]"
+      }`}
+    >
+      <div className="mb-2 flex items-center gap-1.5 text-xs">
+        {alert && <ShieldAlert className="h-3.5 w-3.5 shrink-0 text-red-400" />}
+        <span className="font-medium">{label}</span>
+        {alert && (
+          <span className="ml-auto rounded-full bg-red-500/15 px-2 py-0.5 text-[10px] font-medium text-red-400">
+            сэрэмжлүүлэг
+          </span>
+        )}
+      </div>
+      <div className="flex items-center gap-2">
         <input
           type="number"
-          step="0.5"
+          step="1"
           min="0"
+          max="100"
           value={value}
+          disabled={disabled}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+          className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
         />
+        <span className="text-xs text-[var(--color-muted-foreground)]">
+          оноонд шилжинэ
+        </span>
+      </div>
+    </div>
+  );
+}
+
+/** One engine knob: label + unit + plain-language help + number input + range. */
+function EngineKnob({
+  field,
+  value,
+  onChange,
+  disabled,
+}: {
+  field: EngineField;
+  value: number | undefined;
+  onChange: (v: number) => void;
+  disabled?: boolean;
+}) {
+  return (
+    <div className="flex flex-col rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-ring)]/40">
+      <div className="flex items-baseline justify-between gap-2">
+        <span className="text-sm font-medium">{field.label}</span>
+        <span className="shrink-0 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+          {field.unit}
+        </span>
+      </div>
+      <p className="mt-1 flex-1 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
+        {field.help}
+      </p>
+      <div className="mt-2.5 flex items-center gap-2">
+        <input
+          type="number"
+          step={field.step}
+          min={field.min}
+          max={field.max}
+          value={value ?? ""}
+          disabled={disabled}
+          onChange={(e) => onChange(Number(e.target.value) || 0)}
+          className="w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+        />
+        <span className="text-[11px] text-[var(--color-muted-foreground)]">
+          {field.min}–{field.max}
+        </span>
       </div>
     </div>
   );
