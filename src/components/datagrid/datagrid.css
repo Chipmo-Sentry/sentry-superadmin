@@ -1,0 +1,72 @@
+/* ===== DataGrid + ComboFilter — Chipmo brand themed =====
+ * AG Grid (legacy quartz-dark) -ийн --ag-* хувьсагчдыг брэнд --color-* токенд
+ * тааруулж, бусад superadmin хуудастай нэг ижил харагдуулна. ComboFilter popup
+ * нь body-portal-д render хийгддэг тул глобал --color-* токеноор шууд будна. */
+
+.cw-grid.ag-theme-quartz-dark {
+  --ag-background-color: var(--color-background);
+  --ag-foreground-color: var(--color-foreground);
+  --ag-border-color: var(--color-border);
+  --ag-row-border-color: var(--color-border);
+  --ag-header-background-color: var(--color-muted);
+  --ag-control-panel-background-color: var(--color-background);
+  --ag-row-hover-color: var(--color-muted);
+  --ag-odd-row-background-color: transparent;
+  --ag-column-hover-color: color-mix(in srgb, var(--color-primary) 9%, transparent);
+  --ag-selected-row-background-color: color-mix(in srgb, var(--color-primary) 16%, transparent);
+  --ag-input-focus-border-color: var(--color-ring);
+  --ag-range-selection-border-color: var(--color-ring);
+  --ag-accent-color: var(--color-primary);
+  --ag-font-size: 13px;
+  --ag-header-height: 40px;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius, 8px);
+  overflow: hidden;
+}
+
+/* grid дотор текст сонголтыг хаах (зөвхөн мөр сонгоно) */
+.cw-grid {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  user-select: none;
+}
+
+/* ----- ComboFilter popup (брэнд токеноор) ----- */
+.cf { padding: 8px; width: 230px; font-size: 13px; color: var(--color-foreground); }
+.cf select,
+.cf input {
+  width: 100%; box-sizing: border-box; padding: 6px 8px; margin-bottom: 6px;
+  border: 1px solid var(--color-border); border-radius: 6px;
+  background: var(--color-muted); color: var(--color-foreground);
+}
+.cf select:focus,
+.cf input:focus { outline: none; border-color: var(--color-ring); }
+.cf .row2 { display: flex; gap: 6px; }
+.cf .row2 input { width: 50%; }
+.cf .sep { border-top: 1px solid var(--color-border); margin: 8px 0 6px; }
+.cf .cap {
+  color: var(--color-muted-foreground); font-size: 11px; margin: 2px 0 4px;
+  text-transform: uppercase; letter-spacing: 0.04em;
+}
+.cf .hint {
+  color: var(--color-foreground); font-size: 11px; margin: 2px 0 6px; line-height: 1.45;
+  background: var(--color-muted); border: 1px solid var(--color-border);
+  border-radius: 6px; padding: 6px 8px;
+}
+.cf .info {
+  cursor: pointer; color: var(--color-primary); font-size: 13px; margin-left: 6px;
+  border: 1px solid var(--color-border); border-radius: 50%; width: 16px; height: 16px;
+  display: inline-flex; align-items: center; justify-content: center;
+  line-height: 1; vertical-align: middle;
+}
+.cf .info:hover { background: var(--color-muted); }
+.cf .list { max-height: 170px; overflow-y: auto; overflow-x: hidden; }
+.cf label {
+  display: flex !important; flex-direction: row; align-items: center;
+  justify-content: flex-start; gap: 8px; padding: 3px 4px; cursor: pointer;
+  border-radius: 4px; width: 100%; box-sizing: border-box;
+}
+.cf label:hover { background: var(--color-muted); }
+.cf label input[type="checkbox"] { flex: 0 0 16px; width: 16px; height: 16px; margin: 0; }
+.cf label span { flex: 1 1 auto; text-align: left; white-space: normal; word-break: break-word; }
+.cf label.all { font-weight: 600; }
