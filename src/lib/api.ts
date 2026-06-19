@@ -164,6 +164,10 @@ export const admin = {
     request<void>(`/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}/revoke`, {
       method: "POST",
     }),
+  deleteAiNode: (nodeId: string) =>
+    request<void>(`/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}`, {
+      method: "DELETE",
+    }),
   updateAiNode: (nodeId: string, body: AiNodeUpdate) =>
     request<AiNodePublic>(`/api/v1/admin/ai-nodes/${encodeURIComponent(nodeId)}`, {
       method: "PATCH",

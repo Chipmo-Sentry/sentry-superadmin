@@ -488,6 +488,22 @@ export function AiNodesPage() {
     }
   }
 
+  async function remove(node: AiNodePublic) {
+    const label = node.name || node.hostname || node.id;
+    if (
+      !window.confirm(
+        `"${label}" AI серверийг бүрмөсөн устгах уу?\n\nЖагсаалт болон org-ийн pipeline-аас арилна. Энэ үйлдлийг буцаах боломжгүй.`,
+      )
+    )
+      return;
+    try {
+      await admin.deleteAiNode(node.id);
+      await reload();
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Устгаж чадсангүй");
+    }
+  }
+
   return (
     <div className="space-y-6 p-8">
       <div className="flex items-center justify-between">
@@ -607,6 +623,9 @@ export function AiNodesPage() {
                                 Цуцлах
                               </DropdownItem>
                             )}
+                            <DropdownItem onSelect={() => void remove(n)}>
+                              Устгах
+                            </DropdownItem>
                           </DropdownContent>
                         </Dropdown>
                       </div>
