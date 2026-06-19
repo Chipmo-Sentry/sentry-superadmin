@@ -15,6 +15,7 @@ import {
   ModalTitle,
   Spinner,
 } from "@chipmo-sentry/ui-kit";
+import type { CellStyle, ColDef } from "ag-grid-community";
 import {
   Brain,
   CheckCircle2,
@@ -26,7 +27,9 @@ import {
   Save,
   Trash2,
 } from "lucide-react";
-import { Fragment, useEffect, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
+
+import { DataGrid } from "@/components/datagrid/DataGrid";
 
 import { behaviors } from "@/lib/api";
 import type { BehaviorConfig, BehaviorDimension } from "@/lib/types";
@@ -43,6 +46,9 @@ const LEVELS: { n: number; title: string }[] = [
   { n: 3, title: "Түвшин 3 — Зохион байгуулалттай" },
   { n: 4, title: "Түвшин 4 — Ноцтой үйлдэл" },
 ];
+const LEVEL_TITLE: Record<number, string> = Object.fromEntries(
+  LEVELS.map((l) => [l.n, l.title]),
+);
 
 // Global engine knobs (mirror sentry-ai behavior.DEFAULT_ENGINE) with Mongolian
 // labels + sensible step sizes for the number inputs.
@@ -68,6 +74,13 @@ const PARAM_LABELS: Record<string, string> = {
   seconds: "Хугацаа (сек)",
 };
 
+const CATEGORIES: { value: string; label: string; level: number }[] = [
+  { value: "suspicious", label: "Сэжигтэй (Түвшин 1)", level: 1 },
+  { value: "concealment", label: "Нуун далдлах (Түвшин 2)", level: 2 },
+  { value: "organized", label: "Зохион байгуулалттай (Түвшин 3)", level: 3 },
+  { value: "critical", label: "Ноцтой (Түвшин 4)", level: 4 },
+];
+
 /** True if two numeric maps differ over the union of their keys. */
 function numMapsDiffer(
   a: Record<string, number>,
@@ -78,15 +91,44 @@ function numMapsDiffer(
   return false;
 }
 
-/** Super-admin editor for the behavior catalog. Each criterion is edited IN ITS
- * ROW and saved on its own (PATCH /dimensions/{key} — weight + active + params in
- * one call), so the node picks the change up within ~30s. The global risk
- * thresholds + engine knobs live in a separate collapsible section with their own
- * save, so a per-row edit never clobbers an unsaved global edit (and vice-versa).
- * The backend PATCH endpoints are super-admin gated. */
+/** One grid row, derived from a BehaviorDimension. Display fields are real string
+ * /number columns so the shared ComboFilter (which reads data[field]) can build
+ * its value list + operators. `_d` keeps the source dimension for the edit modal. */
+interface CritRow {
+  key: string;
+  level: number;
+  levelLabel: string;
+  label_mn: string;
+  description_mn: string;
+  detector: string;
+  active: string;
+  weight: number;
+  tuning: string;
+  _d: BehaviorDimension;
+}
+
+const SUCCESS = "var(--color-success)";
+const WARNING = "var(--color-warning)";
+const MUTED = "var(--color-muted-foreground)";
+
+// Typed cell styles — naming them `CellStyle` keeps the columnDefs array element
+// type uniform (otherwise TS unions the literals and injects `?: undefined`).
+const MONO_CELL: CellStyle = { fontFamily: "var(--font-mono, monospace)", color: MUTED };
+const WEIGHT_CELL: CellStyle = { fontWeight: 600 };
+const MUTED_CELL: CellStyle = { color: MUTED };
+
+/** Super-admin editor for the behavior catalog. All criteria live in ONE
+ * filterable/sortable datagrid (level, weight, detector status, активность,
+ * search) — click a row to edit weight + active + per-detector params in a focused
+ * modal (PATCH /dimensions/{key}; the node picks it up within ~30s). The global
+ * risk thresholds + engine knobs keep their own collapsible section + save, so a
+ * per-row edit never clobbers an unsaved global edit (and vice-versa). The backend
+ * PATCH endpoints are super-admin gated. */
 export function BehaviorsPage() {
   const [data, setData] = useState<BehaviorConfig | null>(null);
   const [err, setErr] = useState<string | null>(null);
+  const [editing, setEditing] = useState<BehaviorDimension | null>(null);
+  const [addOpen, setAddOpen] = useState(false);
 
   function hydrate(j: BehaviorConfig) {
     setData(j);
@@ -107,7 +149,83 @@ export function BehaviorsPage() {
     };
   }, []);
 
-  const [addOpen, setAddOpen] = useState(false);
+  const rows = useMemo<CritRow[]>(() => {
+    if (!data) return [];
+    return [...data.dimensions]
+      .sort((a, b) => a.level - b.level || b.weight - a.weight)
+      .map((d) => {
+        const pc = Object.keys(d.params ?? {}).length;
+        return {
+          key: d.key,
+          level: d.level ?? 1,
+          levelLabel: LEVEL_TITLE[d.level ?? 1] ?? `Түвшин ${d.level ?? 1}`,
+          label_mn: d.label_mn,
+          description_mn: d.description_mn ?? "",
+          detector: d.has_detector ? "Детектортой" : "Хүлээгдэж",
+          active: d.active ? "Идэвхтэй" : "Унтраалттай",
+          weight: d.weight,
+          tuning: d.has_detector && pc > 0 ? `${pc} параметр` : "—",
+          _d: d,
+        };
+      });
+  }, [data]);
+
+  const columnDefs = useMemo<ColDef<CritRow>[]>(
+    () => [
+      { field: "levelLabel", headerName: "Түвшин", width: 185, flex: 0 },
+      { field: "label_mn", headerName: "Шалгуур", flex: 2, minWidth: 160 },
+      {
+        field: "key",
+        headerName: "Key",
+        width: 160,
+        flex: 0,
+        cellStyle: MONO_CELL,
+      },
+      {
+        field: "detector",
+        headerName: "Детектор",
+        width: 135,
+        flex: 0,
+        cellStyle: (p) => ({
+          color: p.value === "Детектортой" ? SUCCESS : WARNING,
+        }),
+      },
+      {
+        field: "active",
+        headerName: "Идэвх",
+        width: 120,
+        flex: 0,
+        cellStyle: (p) => ({
+          color: p.value === "Идэвхтэй" ? SUCCESS : MUTED,
+          fontWeight: p.value === "Идэвхтэй" ? 600 : 400,
+        }),
+      },
+      {
+        field: "weight",
+        headerName: "Жин",
+        width: 95,
+        flex: 0,
+        type: "rightAligned",
+        cellStyle: WEIGHT_CELL,
+      },
+      {
+        field: "tuning",
+        headerName: "Нарийн тохиргоо",
+        width: 150,
+        flex: 0,
+        cellStyle: MUTED_CELL,
+      },
+      {
+        field: "description_mn",
+        headerName: "Тайлбар",
+        flex: 3,
+        minWidth: 200,
+        tooltipField: "description_mn",
+        cellStyle: MUTED_CELL,
+      },
+    ],
+    [],
+  );
 
   if (err && !data)
     return <p className="p-8 text-[var(--color-danger)]">{err}</p>;
@@ -129,11 +247,12 @@ export function BehaviorsPage() {
             <Brain className="h-6 w-6 text-[var(--color-primary)]" />
             <h1 className="text-2xl font-semibold">Зан үйлийн engine v2</h1>
           </div>
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="max-w-3xl text-sm text-[var(--color-muted-foreground)]">
             AI {detectorCount} / {data.dimensions.length} детектортой шалгуураар
-            0–100 эрсдэлийн оноо тооцож, дараалал илрэхэд нэмэлт оноо өгнө. Мөр
-            бүрийг шууд засаад <strong>Хадгалах</strong> дарна — sentry-ai ~30
-            секундэд хүлээн авна. Жин ↑ = илүү мэдрэмжтэй.
+            0–100 эрсдэлийн оноо тооцож, дараалал илрэхэд нэмэлт оноо өгнө. Хүснэгтийн
+            мөр дээр дарж жин, идэвх, нарийн тохиргоог засна — sentry-ai ~30 секундэд
+            хүлээн авна. Жин ↑ = илүү мэдрэмжтэй. Багана дээрх <strong>шүүлтүүр</strong>
+            -ээр түвшин/детектор/идэвхээр шүүж, нэрээр хайна.
           </p>
         </div>
         <Button size="sm" variant="outline" onClick={() => setAddOpen(true)}>
@@ -144,41 +263,30 @@ export function BehaviorsPage() {
 
       {err && <p className="mb-4 text-sm text-[var(--color-danger)]">{err}</p>}
 
-      {/* Criteria grouped by level — each ROW saves itself. */}
-      {LEVELS.map((lvl) => {
-        const dims = data.dimensions.filter((d) => (d.level ?? 1) === lvl.n);
-        if (dims.length === 0) return null;
-        return (
-          <Card key={lvl.n} className="mb-4">
-            <CardHeader>
-              <CardTitle className="text-base">{lvl.title}</CardTitle>
-            </CardHeader>
-            <CardContent className="px-0 pt-0">
-              <table className="w-full text-sm">
-                <thead className="border-y border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                  <tr>
-                    <th className="px-3 py-2 text-left font-medium">Шалгуур</th>
-                    <th className="px-3 py-2 text-center font-medium">Детектор</th>
-                    <th className="px-3 py-2 text-center font-medium">Идэвх</th>
-                    <th className="px-3 py-2 text-right font-medium">Жин</th>
-                    <th className="px-3 py-2 text-right font-medium">Хадгалах</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {dims.map((d) => (
-                    <BehaviorRow
-                      key={d.key}
-                      d={d}
-                      onSaved={hydrate}
-                      onError={setErr}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </CardContent>
-          </Card>
-        );
-      })}
+      {/* All criteria — one filterable/sortable grid; click a row to edit. */}
+      <DataGrid<CritRow>
+        rowData={rows}
+        columnDefs={columnDefs}
+        height="auto"
+        rowHeight={40}
+        gridOptions={{
+          domLayout: "autoHeight",
+          pagination: false,
+          suppressCellFocus: true,
+          rowStyle: { cursor: "pointer" },
+          rowSelection: {
+            mode: "singleRow",
+            checkboxes: false,
+            enableClickSelection: false,
+          },
+          onRowClicked: (e) => {
+            if (e.data) setEditing(e.data._d);
+          },
+        }}
+      />
+      <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+        Мөр дээр дарж засна. Толгойн ⋮ / шүүлтүүрээр эрэмбэлж, шүүж болно.
+      </p>
 
       {/* Global config (thresholds + engine) — collapsible, own save. */}
       <GlobalConfigSection data={data} onSaved={hydrate} onError={setErr} />
@@ -225,6 +333,16 @@ export function BehaviorsPage() {
         </Card>
       )}
 
+      <EditCriterionModal
+        dim={editing}
+        onClose={() => setEditing(null)}
+        onSaved={(fresh) => {
+          hydrate(fresh);
+          setEditing(null);
+        }}
+        onError={setErr}
+      />
+
       <AddCriterionModal
         open={addOpen}
         onClose={() => setAddOpen(false)}
@@ -238,57 +356,57 @@ export function BehaviorsPage() {
   );
 }
 
-/** One self-saving criterion row: weight + active toggle + per-detector params,
- * all persisted together in a single PATCH /dimensions/{key} when the operator
- * clicks Хадгалах. Local edits are never clobbered by a sibling row's save (the
- * row only re-seeds from the server when it has no pending edit). */
-function BehaviorRow({
-  d,
+/** Focused editor for one criterion: label/description + active + weight +
+ * per-detector params, all persisted in a single PATCH /dimensions/{key} on save.
+ * The full fresh config returned by the API re-seeds the grid. */
+function EditCriterionModal({
+  dim,
+  onClose,
   onSaved,
   onError,
 }: {
-  d: BehaviorDimension;
+  dim: BehaviorDimension | null;
+  onClose: () => void;
   onSaved: (fresh: BehaviorConfig) => void;
   onError: (msg: string) => void;
 }) {
-  const [weight, setWeight] = useState(d.weight);
-  const [active, setActive] = useState(d.active);
-  const [params, setParams] = useState<Record<string, number>>({
-    ...(d.params ?? {}),
-  });
+  const [label, setLabel] = useState("");
+  const [description, setDescription] = useState("");
+  const [weight, setWeight] = useState(0);
+  const [active, setActive] = useState(true);
+  const [params, setParams] = useState<Record<string, number>>({});
   const [saving, setSaving] = useState(false);
-  const [savedAt, setSavedAt] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!dim) return;
+    setLabel(dim.label_mn);
+    setDescription(dim.description_mn ?? "");
+    setWeight(dim.weight);
+    setActive(dim.active);
+    setParams({ ...(dim.params ?? {}) });
+  }, [dim]);
 
   const dirty =
-    weight !== d.weight ||
-    active !== d.active ||
-    numMapsDiffer(params, d.params ?? {});
-
-  // Absorb external updates (catalog reconcile, another row's save returning the
-  // full config) ONLY when this row has no unsaved edit — so editing one row can
-  // never silently discard what you typed in another.
-  const dParamsKey = JSON.stringify(d.params ?? {});
-  useEffect(() => {
-    if (dirty) return;
-    setWeight(d.weight);
-    setActive(d.active);
-    setParams({ ...(d.params ?? {}) });
-    setSavedAt(null);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [d.weight, d.active, dParamsKey]);
+    !!dim &&
+    (label !== dim.label_mn ||
+      description !== (dim.description_mn ?? "") ||
+      weight !== dim.weight ||
+      active !== dim.active ||
+      numMapsDiffer(params, dim.params ?? {}));
 
   async function save() {
-    if (!dirty || saving) return;
+    if (!dim || !dirty || saving) return;
     setSaving(true);
     onError("");
     try {
-      const fresh = await behaviors.updateDimension(d.key, {
+      const fresh = await behaviors.updateDimension(dim.key, {
+        label_mn: label.trim() || dim.label_mn,
+        description_mn: description.trim(),
         weight,
         active,
         params,
       });
       onSaved(fresh);
-      setSavedAt(new Date().toLocaleTimeString("mn-MN"));
     } catch (e) {
       onError(e instanceof Error ? e.message : "Хадгалах амжилтгүй");
     } finally {
@@ -297,10 +415,17 @@ function BehaviorRow({
   }
 
   async function remove() {
+    if (!dim || saving) return;
+    if (
+      !window.confirm(
+        `"${dim.label_mn}" шалгуурыг устгах уу? Энэ үйлдлийг буцаах боломжгүй.`,
+      )
+    )
+      return;
     setSaving(true);
     onError("");
     try {
-      onSaved(await behaviors.deleteDimension(d.key));
+      onSaved(await behaviors.deleteDimension(dim.key));
     } catch (e) {
       onError(e instanceof Error ? e.message : "Устгаж чадсангүй");
     } finally {
@@ -311,116 +436,139 @@ function BehaviorRow({
   const paramKeys = Object.keys(params).sort();
 
   return (
-    <Fragment>
-      <tr
-        className={`border-b border-[var(--color-border)] ${
-          !active ? "opacity-60" : ""
-        }`}
-      >
-        <td className="px-3 py-3 align-top">
-          <div className="font-medium">{d.label_mn}</div>
-          <code className="mt-0.5 inline-block rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs">
-            {d.key}
-          </code>
-          {d.description_mn && (
-            <p className="mt-1 max-w-md text-xs text-[var(--color-muted-foreground)]">
-              {d.description_mn}
-            </p>
-          )}
-        </td>
-        <td className="px-3 py-3 align-top text-center">
-          {d.has_detector ? (
-            <Badge tone="success">
-              <CheckCircle2 className="h-3 w-3" /> Детектортой
-            </Badge>
-          ) : (
-            <Badge tone="warning">
-              <Clock className="h-3 w-3" /> Хүлээгдэж
-            </Badge>
-          )}
-        </td>
-        <td className="px-3 py-3 align-top text-center">
-          <input
-            type="checkbox"
-            checked={active}
-            disabled={saving}
-            onChange={(e) => setActive(e.target.checked)}
-            className="h-4 w-4"
-            aria-label="Идэвхжүүлэх"
-          />
-        </td>
-        <td className="px-3 py-3 align-top text-right">
-          <input
-            type="number"
-            step="0.5"
-            min="0"
-            value={weight}
-            disabled={saving}
-            onChange={(e) => setWeight(Number(e.target.value) || 0)}
-            className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
-          />
-        </td>
-        <td className="px-3 py-3 align-top text-right">
-          <div className="flex items-center justify-end gap-2">
-            {dirty ? (
-              <Button size="sm" onClick={() => void save()} disabled={saving}>
-                <Save className="h-3.5 w-3.5" />
-                {saving ? "Хадгалж..." : "Хадгалах"}
-              </Button>
-            ) : savedAt ? (
-              <span className="whitespace-nowrap text-xs text-[var(--color-success)]">
-                ✓ {savedAt}
-              </span>
-            ) : null}
-            {!d.builtin && (
-              <Button
-                variant="ghost"
-                size="sm"
-                aria-label="Устгах"
-                disabled={saving}
-                onClick={() => void remove()}
-              >
-                <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
-              </Button>
-            )}
-          </div>
-        </td>
-      </tr>
-      {d.has_detector && paramKeys.length > 0 && (
-        <tr
-          className={`border-b border-[var(--color-border)] bg-[var(--color-muted)]/40 ${
-            !active ? "opacity-60" : ""
-          }`}
-        >
-          <td colSpan={5} className="px-3 pb-3 pt-0">
-            <div className="flex flex-wrap items-end gap-3">
-              <span className="pt-4 text-xs text-[var(--color-muted-foreground)]">
-                Нарийн тохиргоо:
-              </span>
-              {paramKeys.map((pk) => (
-                <label key={pk} className="flex flex-col gap-0.5">
-                  <span className="text-xs text-[var(--color-muted-foreground)]">
-                    {PARAM_LABELS[pk] ?? pk}
-                  </span>
-                  <input
+    <Modal open={dim !== null} onOpenChange={(o) => !o && onClose()}>
+      <ModalContent>
+        {dim && (
+          <>
+            <ModalHeader>
+              <ModalTitle className="flex flex-wrap items-center gap-2">
+                {dim.label_mn}
+                <code className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs font-normal">
+                  {dim.key}
+                </code>
+                {dim.has_detector ? (
+                  <Badge tone="success">
+                    <CheckCircle2 className="h-3 w-3" /> Детектортой
+                  </Badge>
+                ) : (
+                  <Badge tone="warning">
+                    <Clock className="h-3 w-3" /> Хүлээгдэж
+                  </Badge>
+                )}
+              </ModalTitle>
+            </ModalHeader>
+            <form
+              className="space-y-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                void save();
+              }}
+            >
+              <Field label="Нэр">
+                <Input
+                  value={label}
+                  onChange={(e) => setLabel(e.target.value)}
+                  disabled={saving}
+                />
+              </Field>
+              <Field label="Тайлбар">
+                <Input
+                  value={description}
+                  onChange={(e) => setDescription(e.target.value)}
+                  placeholder="Юу илрүүлэхийг тайлбарла"
+                  disabled={saving}
+                />
+              </Field>
+              <div className="grid grid-cols-2 gap-4">
+                <Field label="Жин" hint="↑ = илүү мэдрэмжтэй">
+                  <Input
                     type="number"
-                    step="0.01"
+                    step="0.5"
                     min="0"
-                    value={params[pk] ?? ""}
+                    value={weight}
                     disabled={saving}
-                    onChange={(e) => {
-                      const val = Number(e.target.value) || 0;
-                      setParams((prev) => ({ ...prev, [pk]: val }));
-                    }}
-                    className="w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-xs focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+                    onChange={(e) => setWeight(Number(e.target.value) || 0)}
                   />
+                </Field>
+                <label className="flex items-end gap-2 pb-2.5 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={active}
+                    disabled={saving}
+                    onChange={(e) => setActive(e.target.checked)}
+                    className="h-4 w-4"
+                  />
+                  Идэвхтэй
                 </label>
-              ))}
-            </div>
-          </td>
-        </tr>
-      )}
-    </Fragment>
+              </div>
+
+              {dim.has_detector && paramKeys.length > 0 && (
+                <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
+                  <div className="text-sm font-medium">Нарийн тохиргоо</div>
+                  <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
+                    {paramKeys.map((pk) => (
+                      <Field key={pk} label={PARAM_LABELS[pk] ?? pk}>
+                        <Input
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          value={params[pk] ?? ""}
+                          disabled={saving}
+                          onChange={(e) =>
+                            setParams((prev) => ({
+                              ...prev,
+                              [pk]: Number(e.target.value) || 0,
+                            }))
+                          }
+                        />
+                      </Field>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {!dim.has_detector && (
+                <p className="rounded-md bg-[var(--color-muted)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+                  Энэ шалгуурын детектор код sentry-ai-д хараахан нэмэгдээгүй тул
+                  оноо нэмэхгүй. Идэвх/жин хадгалагдах ч детектор бэлэн болмогц
+                  ажиллана.
+                </p>
+              )}
+
+              <ModalFooter className="justify-between">
+                {!dim.builtin ? (
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={() => void remove()}
+                    disabled={saving}
+                  >
+                    <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                    Устгах
+                  </Button>
+                ) : (
+                  <span />
+                )}
+                <div className="flex items-center gap-3">
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    onClick={onClose}
+                    disabled={saving}
+                  >
+                    Болих
+                  </Button>
+                  <Button type="submit" disabled={!dirty || saving}>
+                    <Save className="h-4 w-4" />
+                    {saving ? "Хадгалж..." : "Хадгалах"}
+                  </Button>
+                </div>
+              </ModalFooter>
+            </form>
+          </>
+        )}
+      </ModalContent>
+    </Modal>
   );
 }
 
@@ -518,9 +666,7 @@ function GlobalConfigSection({
               өөрчилдөг тул тусдаа хадгална.
             </CardDescription>
           </div>
-          {dirty && (
-            <Badge tone="warning">Хадгалаагүй</Badge>
-          )}
+          {dirty && <Badge tone="warning">Хадгалаагүй</Badge>}
         </button>
       </CardHeader>
       {open && (
@@ -614,13 +760,6 @@ function GlobalConfigSection({
     </Card>
   );
 }
-
-const CATEGORIES: { value: string; label: string; level: number }[] = [
-  { value: "suspicious", label: "Сэжигтэй (Түвшин 1)", level: 1 },
-  { value: "concealment", label: "Нуун далдлах (Түвшин 2)", level: 2 },
-  { value: "organized", label: "Зохион байгуулалттай (Түвшин 3)", level: 3 },
-  { value: "critical", label: "Ноцтой (Түвшин 4)", level: 4 },
-];
 
 function AddCriterionModal({
   open,
