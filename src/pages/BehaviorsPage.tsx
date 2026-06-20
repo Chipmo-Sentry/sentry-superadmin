@@ -33,7 +33,7 @@ import {
   SlidersHorizontal,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { Fragment, useEffect, useMemo, useState } from "react";
 
 import { DataGrid } from "@/components/datagrid/DataGrid";
 
@@ -845,27 +845,72 @@ function GlobalConfigSection({
               Анхдагч утгууд зөв тохируулагдсан. Зөвхөн илрүүлэлтийг нарийн
               тааруулах шаардлагатай үед өөрчилнө.
             </p>
-            <div className="space-y-5">
-              {ENGINE_GROUPS.map((group) => (
-                <div key={group.title}>
-                  <div className="mb-2 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]">
-                    {group.title}
-                  </div>
-                  <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-                    {group.fields.map((f) => (
-                      <EngineKnob
-                        key={f.key}
-                        field={f}
-                        value={engine[f.key]}
-                        onChange={(v) =>
-                          setEngine((prev) => ({ ...prev, [f.key]: v }))
-                        }
-                        disabled={saving}
-                      />
-                    ))}
-                  </div>
-                </div>
-              ))}
+            <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+              <table className="w-full text-sm">
+                <thead className="border-b border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                  <tr>
+                    <th className="px-3 py-2 text-left font-medium">Параметр</th>
+                    <th className="hidden px-3 py-2 text-left font-medium sm:table-cell">
+                      Тайлбар
+                    </th>
+                    <th className="px-3 py-2 text-right font-medium">Утга</th>
+                    <th className="px-3 py-2 text-right font-medium">Муж</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {ENGINE_GROUPS.map((group) => (
+                    <Fragment key={group.title}>
+                      <tr className="bg-[var(--color-muted)]/40">
+                        <td
+                          colSpan={4}
+                          className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]"
+                        >
+                          {group.title}
+                        </td>
+                      </tr>
+                      {group.fields.map((f) => (
+                        <tr
+                          key={f.key}
+                          className="border-t border-[var(--color-border)] align-top"
+                        >
+                          <td className="px-3 py-2.5">
+                            <div className="font-medium">{f.label}</div>
+                            <div className="text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+                              {f.unit}
+                            </div>
+                            <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted-foreground)] sm:hidden">
+                              {f.help}
+                            </p>
+                          </td>
+                          <td className="hidden max-w-md px-3 py-2.5 text-xs leading-relaxed text-[var(--color-muted-foreground)] sm:table-cell">
+                            {f.help}
+                          </td>
+                          <td className="px-3 py-2.5 text-right">
+                            <input
+                              type="number"
+                              step={f.step}
+                              min={f.min}
+                              max={f.max}
+                              value={engine[f.key] ?? ""}
+                              disabled={saving}
+                              onChange={(e) =>
+                                setEngine((prev) => ({
+                                  ...prev,
+                                  [f.key]: Number(e.target.value) || 0,
+                                }))
+                              }
+                              className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+                            />
+                          </td>
+                          <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-[var(--color-muted-foreground)]">
+                            {f.min}–{f.max}
+                          </td>
+                        </tr>
+                      ))}
+                    </Fragment>
+                  ))}
+                </tbody>
+              </table>
             </div>
           </section>
 
@@ -1148,44 +1193,4 @@ function BoundaryInput({
   );
 }
 
-/** One engine knob: label + unit + plain-language help + number input + range. */
-function EngineKnob({
-  field,
-  value,
-  onChange,
-  disabled,
-}: {
-  field: EngineField;
-  value: number | undefined;
-  onChange: (v: number) => void;
-  disabled?: boolean;
-}) {
-  return (
-    <div className="flex flex-col rounded-lg border border-[var(--color-border)] p-3 transition-colors hover:border-[var(--color-ring)]/40">
-      <div className="flex items-baseline justify-between gap-2">
-        <span className="text-sm font-medium">{field.label}</span>
-        <span className="shrink-0 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
-          {field.unit}
-        </span>
-      </div>
-      <p className="mt-1 flex-1 text-xs leading-relaxed text-[var(--color-muted-foreground)]">
-        {field.help}
-      </p>
-      <div className="mt-2.5 flex items-center gap-2">
-        <input
-          type="number"
-          step={field.step}
-          min={field.min}
-          max={field.max}
-          value={value ?? ""}
-          disabled={disabled}
-          onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="w-24 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
-        />
-        <span className="text-[11px] text-[var(--color-muted-foreground)]">
-          {field.min}–{field.max}
-        </span>
-      </div>
-    </div>
-  );
-}
+// (EngineKnob component replaced by the engine settings table above.)
