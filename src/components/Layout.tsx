@@ -9,6 +9,7 @@ import {
   ScrollText,
   Users,
   Wallet,
+  Workflow,
 } from "lucide-react";
 import { NavLink, Outlet, useNavigate } from "react-router-dom";
 
@@ -21,6 +22,7 @@ const NAV = [
   { to: "/leads", label: "Demo хүсэлтүүд", icon: Inbox, end: false },
   { to: "/billing", label: "Төлбөр", icon: Wallet, end: false },
   { to: "/ai-nodes", label: "AI сервер", icon: Cpu, end: false },
+  { to: "/pipeline", label: "Урсгал", icon: Workflow, end: false },
   { to: "/behaviors", label: "Сэжиг шалгуур", icon: Brain, end: false },
   { to: "/logs", label: "Лог", icon: ScrollText, end: false },
 ] as const;
