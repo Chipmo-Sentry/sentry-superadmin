@@ -185,7 +185,60 @@ export const admin = {
     request<FeedbackAnalytics>(
       `/api/v1/admin/analytics/feedback?range=${encodeURIComponent(range)}`,
     ),
+
+  /** Recent alerts across ALL orgs — one row per problematic clip's pipeline
+   * trace (camera → behaviours → VLM → decision → review). Newest first;
+   * filtering is done client-side over the fetched window. */
+  listAlerts: (limit = 100, offset = 0) =>
+    request<AdminAlert[]>(
+      `/api/v1/admin/alerts?limit=${limit}&offset=${offset}`,
+    ),
 };
+
+// === Pipeline ("Урсгал") — per-clip alert trace (hand-typed, mirrors the
+// backend AdminAlertRow schema; not from codegen, like NodeMetric above). ===
+
+export type AdminAlertLevel = "ignore" | "log" | "notify" | "review";
+export type AdminAlertCategory =
+  | "browsing"
+  | "cart_pickup"
+  | "pocket_conceal"
+  | "bag_conceal"
+  | "other";
+export type AdminAlertTrigger = "manual_upload" | "live_threshold";
+export type AdminFeedbackVerdict = "true_positive" | "false_positive" | "unclear";
+
+export interface AdminBehaviorDetail {
+  key: string;
+  offset_sec: number;
+  score: number;
+}
+
+export interface AdminAlert {
+  id: string;
+  clip_id: string;
+  created_at: string;
+  organization_id: string;
+  organization_name: string;
+  store_id: string | null;
+  store_name: string | null;
+  camera_id: string | null;
+  camera_name: string | null;
+  category: AdminAlertCategory;
+  actions: string[] | null;
+  confidence: number;
+  reasoning: string;
+  model_name: string;
+  alert_level: AdminAlertLevel;
+  inference_latency_ms: number;
+  triggered_by: AdminAlertTrigger;
+  person_id: number | null;
+  peak_risk_pct: number | null;
+  triggered_behaviors: string[] | null;
+  triggered_sequences: string[] | null;
+  triggered_behavior_detail: AdminBehaviorDetail[] | null;
+  feedback_verdict: AdminFeedbackVerdict | null;
+}
 
 // === Event / activity log (platform-wide; super-admin sees every org) ===
 
