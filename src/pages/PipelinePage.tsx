@@ -96,6 +96,8 @@ export function PipelinePage() {
   const [verdict, setVerdict] = useState("");
   const [source, setSource] = useState("");
   const [camera, setCamera] = useState("");
+  const [dateFrom, setDateFrom] = useState("");
+  const [dateTo, setDateTo] = useState("");
 
   async function reload() {
     try {
@@ -124,6 +126,10 @@ export function PipelinePage() {
       if (level && a.alert_level !== level) return false;
       if (source && a.triggered_by !== source) return false;
       if (camera && a.camera_name !== camera) return false;
+      if (dateFrom && new Date(a.created_at) < new Date(`${dateFrom}T00:00:00`))
+        return false;
+      if (dateTo && new Date(a.created_at) > new Date(`${dateTo}T23:59:59`))
+        return false;
       if (verdict === "__none" ? a.feedback_verdict !== null : verdict && a.feedback_verdict !== verdict)
         return false;
       if (q) {
@@ -143,9 +149,17 @@ export function PipelinePage() {
       }
       return true;
     });
-  }, [alerts, search, level, verdict, source, camera]);
+  }, [alerts, search, level, verdict, source, camera, dateFrom, dateTo]);
 
-  const filtersActive = !!(search || level || verdict || source || camera);
+  const filtersActive = !!(
+    search ||
+    level ||
+    verdict ||
+    source ||
+    camera ||
+    dateFrom ||
+    dateTo
+  );
 
   if (error && !alerts)
     return <p className="p-8 text-[var(--color-danger)]">{error}</p>;
@@ -223,6 +237,24 @@ export function PipelinePage() {
             </option>
           ))}
         </Select>
+        <div className="flex items-center gap-1.5">
+          <span className="text-xs text-[var(--color-muted-foreground)]">Огноо</span>
+          <Input
+            type="date"
+            value={dateFrom}
+            onChange={(e) => setDateFrom(e.target.value)}
+            className="w-auto"
+            aria-label="Эхлэх огноо"
+          />
+          <span className="text-xs text-[var(--color-muted-foreground)]">–</span>
+          <Input
+            type="date"
+            value={dateTo}
+            onChange={(e) => setDateTo(e.target.value)}
+            className="w-auto"
+            aria-label="Дуусах огноо"
+          />
+        </div>
         {filtersActive && (
           <Button
             variant="ghost"
@@ -233,6 +265,8 @@ export function PipelinePage() {
               setVerdict("");
               setSource("");
               setCamera("");
+              setDateFrom("");
+              setDateTo("");
             }}
           >
             Цэвэрлэх
