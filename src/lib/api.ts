@@ -193,7 +193,84 @@ export const admin = {
     request<AdminAlert[]>(
       `/api/v1/admin/alerts?limit=${limit}&offset=${offset}`,
     ),
+
+  /** Every store across all orgs (id, name, org name, camera count) — the
+   * store picker for the per-store edge-config editor. */
+  listStores: () => request<StoreAdminRow[]>("/api/v1/admin/stores"),
+
+  /** A store's edge (agent-pc) behaviour-engine tunables: raw overrides +
+   * version + the effective merged config the store agents receive. */
+  getStoreEdgeConfig: (storeId: string) =>
+    request<EdgeConfigAdminView>(
+      `/api/v1/admin/stores/${encodeURIComponent(storeId)}/edge-config`,
+    ),
+  /** Set a store's edge tunable overrides (partial). Omitted/undefined keys
+   * fall back to the agent defaults; an empty body resets to defaults. The
+   * version bumps so the store agents re-apply within ~one poll. */
+  setStoreEdgeConfig: (storeId: string, body: EdgeConfigOverrides) =>
+    request<EdgeConfigAdminView>(
+      `/api/v1/admin/stores/${encodeURIComponent(storeId)}/edge-config`,
+      { method: "PUT", body: JSON.stringify(body) },
+    ),
 };
+
+// === Per-store edge config ("Edge тохиргоо") — agent-pc Stage-1 behaviour
+// engine tunables (hand-typed, mirrors sentry-backend schemas/edge.py). ===
+
+export interface StoreAdminRow {
+  id: string;
+  name: string;
+  organization_id: string;
+  organization_name: string;
+  camera_count: number;
+}
+
+/** The 24 edge tunables + monotonic version (the effective merged config the
+ * store agent receives). Field names + defaults mirror EdgeConfigPayload. */
+export interface EdgeConfigPayload {
+  version: number;
+  // Detection
+  person_conf: number;
+  item_conf: number;
+  frame_skip: number;
+  // Behaviour signal weights + geometry
+  w_holding: number;
+  w_conceal: number;
+  w_wrist_torso: number;
+  reach_frac: number;
+  near_frac: number;
+  min_kp_conf: number;
+  // Risk → episode FSM
+  decay: number;
+  open_risk: number;
+  close_risk: number;
+  post_quiet_sec: number;
+  drop_after_sec: number;
+  iou_match: number;
+  band_yellow: number;
+  band_red: number;
+  // Clip recorder ([-3s .. +3s])
+  pre_sec: number;
+  post_sec: number;
+  segment_sec: number;
+  keep_sec: number;
+  max_clips: number;
+  max_age_sec: number;
+  // Server handoff
+  upload_clips: boolean;
+}
+
+/** A partial set of edge tunables — only the keys an operator chose to override
+ * for this store. Everything else stays at the agent default. */
+export type EdgeConfigOverrides = Partial<Omit<EdgeConfigPayload, "version">>;
+
+export interface EdgeConfigAdminView {
+  store_id: string;
+  version: number;
+  overrides: EdgeConfigOverrides;
+  updated_at: string | null;
+  effective: EdgeConfigPayload;
+}
 
 // === Pipeline ("Урсгал") — per-clip alert trace (hand-typed, mirrors the
 // backend AdminAlertRow schema; not from codegen, like NodeMetric above). ===
