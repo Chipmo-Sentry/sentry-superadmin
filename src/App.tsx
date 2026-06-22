@@ -6,6 +6,7 @@ import { BehaviorsPage } from "@/pages/BehaviorsPage";
 import { AiNodesPage } from "@/pages/AiNodesPage";
 import { BillingPage } from "@/pages/BillingPage";
 import { DashboardPage } from "@/pages/DashboardPage";
+import { EdgeConfigPage } from "@/pages/EdgeConfigPage";
 import { LeadsPage } from "@/pages/LeadsPage";
 import { LogsPage } from "@/pages/LogsPage";
 import { LoginPage } from "@/pages/LoginPage";
@@ -29,6 +30,7 @@ export function App() {
           <Route path="ai-nodes" element={<AiNodesPage />} />
           <Route path="pipeline" element={<PipelinePage />} />
           <Route path="behaviors" element={<BehaviorsPage />} />
+          <Route path="edge-config" element={<EdgeConfigPage />} />
           <Route path="logs" element={<LogsPage />} />
         </Route>
       </Route>

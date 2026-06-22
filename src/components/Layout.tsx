@@ -6,6 +6,7 @@ import {
   Inbox,
   LayoutDashboard,
   LogOut,
+  MonitorCog,
   ScrollText,
   Users,
   Wallet,
@@ -24,6 +25,7 @@ const NAV = [
   { to: "/ai-nodes", label: "AI сервер", icon: Cpu, end: false },
   { to: "/pipeline", label: "Урсгал", icon: Workflow, end: false },
   { to: "/behaviors", label: "Сэжиг шалгуур", icon: Brain, end: false },
+  { to: "/edge-config", label: "Edge тохиргоо", icon: MonitorCog, end: false },
   { to: "/logs", label: "Лог", icon: ScrollText, end: false },
 ] as const;
 
