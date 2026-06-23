@@ -194,28 +194,25 @@ export const admin = {
       `/api/v1/admin/alerts?limit=${limit}&offset=${offset}`,
     ),
 
-  /** Every store across all orgs (id, name, org name, camera count) — the
-   * store picker for the per-store edge-config editor. */
+  /** Every store across all orgs (id, name, org name, camera count). */
   listStores: () => request<StoreAdminRow[]>("/api/v1/admin/stores"),
 
-  /** A store's edge (agent-pc) behaviour-engine tunables: raw overrides +
-   * version + the effective merged config the store agents receive. */
-  getStoreEdgeConfig: (storeId: string) =>
-    request<EdgeConfigAdminView>(
-      `/api/v1/admin/stores/${encodeURIComponent(storeId)}/edge-config`,
-    ),
-  /** Set a store's edge tunable overrides (partial). Omitted/undefined keys
+  /** The ONE global edge (agent-pc) behaviour-engine config: raw overrides +
+   * version + the effective merged config EVERY store's agents receive. */
+  getGlobalEdgeConfig: () =>
+    request<EdgeConfigAdminView>("/api/v1/admin/edge-config"),
+  /** Set the global edge tunable overrides (partial). Omitted/undefined keys
    * fall back to the agent defaults; an empty body resets to defaults. The
-   * version bumps so the store agents re-apply within ~one poll. */
-  setStoreEdgeConfig: (storeId: string, body: EdgeConfigOverrides) =>
-    request<EdgeConfigAdminView>(
-      `/api/v1/admin/stores/${encodeURIComponent(storeId)}/edge-config`,
-      { method: "PUT", body: JSON.stringify(body) },
-    ),
+   * version bumps so ALL store agents re-apply within ~one poll. */
+  setGlobalEdgeConfig: (body: EdgeConfigOverrides) =>
+    request<EdgeConfigAdminView>("/api/v1/admin/edge-config", {
+      method: "PUT",
+      body: JSON.stringify(body),
+    }),
 };
 
-// === Per-store edge config ("Edge тохиргоо") — agent-pc Stage-1 behaviour
-// engine tunables (hand-typed, mirrors sentry-backend schemas/edge.py). ===
+// === Global edge config ("Edge тохиргоо") — agent-pc Stage-1 behaviour engine
+// tunables, ONE value for all stores (hand-typed, mirrors schemas/edge.py). ===
 
 export interface StoreAdminRow {
   id: string;
