@@ -40,6 +40,16 @@ const DEFAULTS: Record<FieldKey, number | boolean> = {
   w_exit_after_conceal: 40.0,
   w_repeated_shelf: 3.0,
   repeated_shelf_threshold: 3,
+  interval_holding: 0.0,
+  mindur_holding: 0.0,
+  interval_wrist_torso: 0.0,
+  mindur_wrist_torso: 0.0,
+  interval_conceal: 0.0,
+  mindur_conceal: 0.0,
+  interval_repeated_shelf: 0.0,
+  mindur_repeated_shelf: 0.0,
+  interval_exit_after_conceal: 0.0,
+  mindur_exit_after_conceal: 0.0,
   reach_frac: 0.35,
   near_frac: 0.18,
   min_kp_conf: 0.3,
@@ -85,81 +95,62 @@ interface FieldGroup {
 
 // Grouped so the operator meets the founder's core knobs first ("which movement
 // banks how many points"), then the episode thresholds, then the finer geometry.
-const GROUPS: FieldGroup[] = [
+// Per-behaviour editor (founder): each scoring behaviour has a score + timing
+// (interval = bank once per N sec; min-duration = must be active N sec first).
+// Rendered as a dedicated table (5 rows × 3 inputs) — these are exactly the
+// behaviours shown in the agent-pc «Зан үйл» menu.
+interface BehaviorRow {
+  label: string;
+  desc: string;
+  scoreKey: FieldKey;
+  intervalKey: FieldKey;
+  mindurKey: FieldKey;
+  scoreMax: number;
+}
+const BEHAVIORS: BehaviorRow[] = [
   {
-    title: "Зан үйлийн оноо (жин)",
-    icon: ShieldAlert,
-    intro:
-      "Хүн дараах хөдөлгөөн хийх бүрд сэжиг оноонд хэдэн оноо НЭМЭГДЭХ вэ. Эдгээр нь agent-pc «Зан үйл» цэсэнд харагдах яг тэр зан үйлүүд.",
-    fields: [
-      {
-        key: "w_holding",
-        label: "Эд зүйл барих",
-        unit: "оноо",
-        kind: "number",
-        step: 0.5,
-        min: 0,
-        max: 50,
-        help: "Гарт нь бараа ойртож «барьсан» гэж тооцогдох кадр бүрд нэмэгдэх оноо.",
-        effect: "↑ ихэсгэвэл бараа барих нь илүү хүчтэй сэжиг болно; ↓ багасгавал нөлөө багасна.",
-      },
-      {
-        key: "w_conceal",
-        label: "Эд зүйл нуух",
-        unit: "оноо",
-        kind: "number",
-        step: 0.5,
-        min: 0,
-        max: 50,
-        help: "Бараа барьсан гар нь бэлхүүс/хармаан руу ойртвол (нуух байрлал) нэмэгдэх оноо. Хамгийн хүчтэй дохио.",
-        effect: "↑ ихэсгэвэл нуух хөдөлгөөн илүү хурдан сэрэмжлүүлэг болно; ↓ багасгавал сулрана.",
-      },
-      {
-        key: "w_wrist_torso",
-        label: "Гар бие рүү",
-        unit: "оноо",
-        kind: "number",
-        step: 0.5,
-        min: 0,
-        max: 50,
-        help: "Гар бие рүү ойртсон ч бараа илрээгүй үед нэмэгдэх бага оноо.",
-        effect: "↑ ихэсгэвэл бараагүй гар-бие хөдөлгөөнд ч оноо нэмнэ; ↓ багасгавал зөвхөн тодорхой үед.",
-      },
-      {
-        key: "w_repeated_shelf",
-        label: "Тавиур давтан зочлох",
-        unit: "оноо",
-        kind: "number",
-        step: 0.5,
-        min: 0,
-        max: 50,
-        help: "Нэг тавиурын бүс рүү олон удаа эргэж очвол нэмэгдэх оноо (зон шаардана).",
-        effect: "↑ ихэсгэвэл тавиур руу дахин очих нь илүү сэжигтэй; ↓ багасгавал бараг нөлөөгүй.",
-      },
-      {
-        key: "repeated_shelf_threshold",
-        label: "Тавиур давтахын босго",
-        unit: "удаа",
-        kind: "number",
-        step: 1,
-        min: 2,
-        max: 20,
-        help: "Хэдэн удаа очсоны дараа «давтан зочлох» гэж тооцох вэ.",
-        effect: "↓ багасгавал цөөн удаа очиход сэрэмжилнэ (мэдрэмжтэй); ↑ ихэсгэвэл олон удаа очих шаардана.",
-      },
-      {
-        key: "w_exit_after_conceal",
-        label: "Нуусны дараа гарц руу",
-        unit: "оноо",
-        kind: "number",
-        step: 1,
-        min: 0,
-        max: 100,
-        help: "Нуусан хүн гарцын бүс рүү орвол нэмэгдэх оноо — хулгайн хамгийн хүчтэй дохио (зон шаардана).",
-        effect: "↑ ихэсгэвэл нуусан хүн гарц руу орох нь шууд өндөр эрсдэл; ↓ багасгавал сулрана.",
-      },
-    ],
+    label: "Эд зүйл барих",
+    desc: "Гарт нь бараа ойртож «барьсан» гэж тооцогдох.",
+    scoreKey: "w_holding",
+    intervalKey: "interval_holding",
+    mindurKey: "mindur_holding",
+    scoreMax: 50,
   },
+  {
+    label: "Эд зүйл нуух",
+    desc: "Бараа барьсан гар бие рүү ойртвол — нуух байрлал (хамгийн хүчтэй).",
+    scoreKey: "w_conceal",
+    intervalKey: "interval_conceal",
+    mindurKey: "mindur_conceal",
+    scoreMax: 50,
+  },
+  {
+    label: "Гар бие рүү",
+    desc: "Гар бие рүү ойртсон ч бараа илрээгүй (сул дохио).",
+    scoreKey: "w_wrist_torso",
+    intervalKey: "interval_wrist_torso",
+    mindurKey: "mindur_wrist_torso",
+    scoreMax: 50,
+  },
+  {
+    label: "Тавиур давтан зочлох",
+    desc: "Нэг тавиурын бүс рүү олон удаа эргэж очих (зон шаардана).",
+    scoreKey: "w_repeated_shelf",
+    intervalKey: "interval_repeated_shelf",
+    mindurKey: "mindur_repeated_shelf",
+    scoreMax: 50,
+  },
+  {
+    label: "Нуусны дараа гарц руу",
+    desc: "Нуусан хүн гарцын бүс рүү орох — хулгайн хамгийн хүчтэй дохио (зон шаардана).",
+    scoreKey: "w_exit_after_conceal",
+    intervalKey: "interval_exit_after_conceal",
+    mindurKey: "mindur_exit_after_conceal",
+    scoreMax: 100,
+  },
+];
+
+const GROUPS: FieldGroup[] = [
   {
     title: "Эрсдэл → сэжигтэй бичлэг (эпизод)",
     icon: MonitorCog,
@@ -418,7 +409,13 @@ const GROUPS: FieldGroup[] = [
   },
 ];
 
-const ALL_KEYS = GROUPS.flatMap((g) => g.fields.map((f) => f.key));
+// Every editable key: the generic groups + the per-behaviour table (score +
+// timing) + the shelf-revisit threshold (which lives under the behaviour table).
+const ALL_KEYS: FieldKey[] = [
+  ...GROUPS.flatMap((g) => g.fields.map((f) => f.key)),
+  ...BEHAVIORS.flatMap((b) => [b.scoreKey, b.intervalKey, b.mindurKey]),
+  "repeated_shelf_threshold",
+];
 
 /** Per-store editor for the agent-pc Stage-1 behaviour engine. Pick a store →
  * tune the 24 edge tunables. Only fields differing from the agent DEFAULTS are
@@ -561,6 +558,13 @@ export function EdgeConfigPage() {
             </span>
           </div>
 
+          <BehaviorTable
+            draft={draft}
+            disabled={saving}
+            onChange={setField}
+            onReset={resetField}
+          />
+
           {GROUPS.map((group) => (
             <ConfigGroup
               key={group.title}
@@ -610,6 +614,144 @@ function seedDraft(eff: EdgeConfigPayload): Record<string, number | boolean> {
   const d: Record<string, number | boolean> = {};
   for (const k of ALL_KEYS) d[k] = eff[k as keyof EdgeConfigPayload];
   return d;
+}
+
+const NUM_INPUT_CLASS =
+  "w-20 rounded-md border bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30";
+
+/** A single numeric cell bound to draft[key]; highlights when overridden. */
+function NumCell({
+  fkey,
+  draft,
+  disabled,
+  onChange,
+  step,
+  min,
+  max,
+}: {
+  fkey: FieldKey;
+  draft: Record<string, number | boolean>;
+  disabled: boolean;
+  onChange: (key: FieldKey, value: number) => void;
+  step: number;
+  min: number;
+  max: number;
+}) {
+  const cur = draft[fkey];
+  const overridden = cur !== undefined && cur !== DEFAULTS[fkey];
+  return (
+    <input
+      type="number"
+      step={step}
+      min={min}
+      max={max}
+      value={cur === undefined ? "" : Number(cur)}
+      disabled={disabled}
+      onChange={(e) => onChange(fkey, e.target.value === "" ? 0 : Number(e.target.value))}
+      className={`${NUM_INPUT_CLASS} ${
+        overridden ? "border-[var(--color-warning)]" : "border-[var(--color-border)]"
+      }`}
+    />
+  );
+}
+
+/** The founder's per-behaviour editor: score + timing (interval + min-duration)
+ * for each of the 5 scoring behaviours, in one table — mirroring agent-pc «Зан
+ * үйл». The shelf-revisit count threshold sits just under it. */
+function BehaviorTable({
+  draft,
+  disabled,
+  onChange,
+  onReset,
+}: {
+  draft: Record<string, number | boolean>;
+  disabled: boolean;
+  onChange: (key: FieldKey, value: number | boolean) => void;
+  onReset: (key: FieldKey) => void;
+}) {
+  return (
+    <Card className="mb-4">
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2 text-base">
+          <ShieldAlert className="h-4 w-4 text-[var(--color-primary)]" />
+          Зан үйл — оноо ба хугацаа
+        </CardTitle>
+        <CardDescription className="mt-1">
+          agent-pc «Зан үйл» цэсэнд харагдах яг тэр зан үйлүүд. Тус бүрд:{" "}
+          <strong>Оноо</strong> — илрэхэд сэжиг оноонд хэдэн оноо нэмэх;{" "}
+          <strong>Давтамж</strong> — хэдэн секунд тутамд НЭГ л банклах (0 = кадр бүрд);{" "}
+          <strong>Үргэлжлэх</strong> — хэдэн секунд тогтвортой үргэлжилж байж банклаж эхлэх.
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+          <table className="w-full text-sm">
+            <thead className="border-b border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+              <tr>
+                <th className="px-3 py-2 text-left font-medium">Зан үйл</th>
+                <th className="px-3 py-2 text-right font-medium">Оноо</th>
+                <th className="px-3 py-2 text-right font-medium">Давтамж (сек)</th>
+                <th className="px-3 py-2 text-right font-medium">Үргэлжлэх (сек)</th>
+                <th className="px-2 py-2"></th>
+              </tr>
+            </thead>
+            <tbody>
+              {BEHAVIORS.map((b) => {
+                const dirtyRow = [b.scoreKey, b.intervalKey, b.mindurKey].some(
+                  (k) => draft[k] !== undefined && draft[k] !== DEFAULTS[k],
+                );
+                return (
+                  <tr key={b.scoreKey} className="border-t border-[var(--color-border)] align-top">
+                    <td className="px-3 py-2.5">
+                      <div className="font-medium">{b.label}</div>
+                      <p className="mt-0.5 max-w-md text-xs leading-relaxed text-[var(--color-muted-foreground)]">
+                        {b.desc}
+                      </p>
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <NumCell fkey={b.scoreKey} draft={draft} disabled={disabled}
+                        onChange={onChange} step={0.5} min={0} max={b.scoreMax} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <NumCell fkey={b.intervalKey} draft={draft} disabled={disabled}
+                        onChange={onChange} step={0.5} min={0} max={60} />
+                    </td>
+                    <td className="px-3 py-2.5 text-right">
+                      <NumCell fkey={b.mindurKey} draft={draft} disabled={disabled}
+                        onChange={onChange} step={0.5} min={0} max={60} />
+                    </td>
+                    <td className="px-2 py-2.5 text-right">
+                      <button
+                        type="button"
+                        onClick={() => {
+                          onReset(b.scoreKey);
+                          onReset(b.intervalKey);
+                          onReset(b.mindurKey);
+                        }}
+                        disabled={disabled || !dirtyRow}
+                        title="Энэ мөрийг анхдагч руу буцаах"
+                        className="rounded p-1 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] disabled:opacity-30"
+                      >
+                        <RotateCcw className="h-3.5 w-3.5" />
+                      </button>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+        {/* Shelf-revisit count threshold (belongs with «Тавиур давтан зочлох»). */}
+        <div className="mt-3 flex items-center gap-3 text-sm">
+          <span className="text-[var(--color-muted-foreground)]">
+            «Тавиур давтан зочлох» босго — хэдэн удаа очвол тооцох:
+          </span>
+          <NumCell fkey="repeated_shelf_threshold" draft={draft} disabled={disabled}
+            onChange={onChange} step={1} min={2} max={20} />
+        </div>
+      </CardContent>
+    </Card>
+  );
 }
 
 /** One grouped table of tunables with default-vs-current + per-field reset. */
