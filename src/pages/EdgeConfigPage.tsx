@@ -25,7 +25,6 @@ import type {
   EdgeConfigAdminView,
   EdgeConfigOverrides,
   EdgeConfigPayload,
-  StoreAdminRow,
 } from "@/lib/api";
 
 // Agent defaults — MUST mirror sentry-backend schemas/edge.py EdgeConfigPayload
@@ -363,39 +362,19 @@ const ALL_KEYS = GROUPS.flatMap((g) => g.fields.map((f) => f.key));
  * within ~one poll). Defaults are shown next to every field so the operator
  * sees exactly what they're changing from. Super-admin gated end-to-end. */
 export function EdgeConfigPage() {
-  const [stores, setStores] = useState<StoreAdminRow[] | null>(null);
-  const [storeId, setStoreId] = useState<string>("");
   const [view, setView] = useState<EdgeConfigAdminView | null>(null);
   const [draft, setDraft] = useState<Record<string, number | boolean>>({});
-  const [loadingCfg, setLoadingCfg] = useState(false);
+  const [loadingCfg, setLoadingCfg] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | null>(null);
   const [savedAt, setSavedAt] = useState<string | null>(null);
 
-  // Load the store list once.
+  // Load the ONE global edge config on mount + seed the draft from its effective
+  // values (the config is platform-wide now — no store to choose).
   useEffect(() => {
-    let cancelled = false;
-    admin.listStores().then(
-      (s) => !cancelled && setStores(s),
-      (e) => !cancelled && setErr(e instanceof Error ? e.message : "Алдаа"),
-    );
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
-  // Load the selected store's config + seed the draft from its effective values.
-  useEffect(() => {
-    if (!storeId) {
-      setView(null);
-      setDraft({});
-      return;
-    }
     let cancelled = false;
     setLoadingCfg(true);
-    setErr(null);
-    setSavedAt(null);
-    admin.getStoreEdgeConfig(storeId).then(
+    admin.getGlobalEdgeConfig().then(
       (v) => {
         if (cancelled) return;
         setView(v);
@@ -411,17 +390,7 @@ export function EdgeConfigPage() {
     return () => {
       cancelled = true;
     };
-  }, [storeId]);
-
-  const storesByOrg = useMemo(() => {
-    const m = new Map<string, StoreAdminRow[]>();
-    for (const s of stores ?? []) {
-      const list = m.get(s.organization_name) ?? [];
-      list.push(s);
-      m.set(s.organization_name, list);
-    }
-    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
-  }, [stores]);
+  }, []);
 
   const overrideCount = useMemo(
     () => ALL_KEYS.filter((k) => draft[k] !== undefined && draft[k] !== DEFAULTS[k]).length,
@@ -453,7 +422,7 @@ export function EdgeConfigPage() {
   }
 
   async function save() {
-    if (!storeId || !dirty || saving) return;
+    if (!dirty || saving) return;
     setSaving(true);
     setErr(null);
     // Only ship the keys that differ from the agent default → the rest reset.
@@ -462,7 +431,7 @@ export function EdgeConfigPage() {
       if (draft[k] !== undefined && draft[k] !== DEFAULTS[k]) overrides[k] = draft[k];
     }
     try {
-      const fresh = await admin.setStoreEdgeConfig(storeId, overrides as EdgeConfigOverrides);
+      const fresh = await admin.setGlobalEdgeConfig(overrides as EdgeConfigOverrides);
       setView(fresh);
       setDraft(seedDraft(fresh.effective));
       setSavedAt(new Date().toLocaleTimeString("mn-MN"));
@@ -475,69 +444,41 @@ export function EdgeConfigPage() {
 
   return (
     <div className="p-8">
-      <div className="mb-6">
+      <div className="mb-5">
         <div className="mb-2 flex items-center gap-2">
           <MonitorCog className="h-6 w-6 text-[var(--color-primary)]" />
           <h1 className="text-2xl font-semibold">Edge тохиргоо — дэлгүүрийн AI хөдөлгүүр</h1>
         </div>
         <p className="max-w-3xl text-sm text-[var(--color-muted-foreground)]">
           Дэлгүүрийн компьютер (agent-pc) дээр ажилладаг <strong>Stage-1 зан үйлийн
-          хөдөлгүүр</strong>ийн тохиргоо. Энд ямар хөдөлгөөнд хэдэн оноо нэмэгдэх,
-          хэдэн оноонд сэжигтэй бичлэг үүсэхийг <strong>дэлгүүр тус бүрээр</strong>
-          тааруулна. Хадгалмагц тухайн дэлгүүрийн агентууд ~1 polling дотор шинэ
-          тохиргоог авна. (Энэ нь cloud дахь «Сэжиг шалгуур» хөдөлгүүрээс тусдаа.)
+          хөдөлгүүр</strong>ийн тохиргоо: ямар хөдөлгөөнд хэдэн оноо нэмэгдэх, хэдэн
+          оноонд сэжигтэй бичлэг үүсэхийг тодорхойлно. (Cloud дахь «Сэжиг шалгуур»
+          хөдөлгүүрээс тусдаа.)
         </p>
       </div>
 
-      {/* Store picker */}
-      <Card className="mb-6">
-        <CardHeader>
-          <CardTitle className="text-base">Дэлгүүр сонгох</CardTitle>
-          <CardDescription>
-            Тохиргоо нь сонгосон дэлгүүрийн бүх камерт хамаарна.
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {stores === null ? (
-            <Spinner />
-          ) : stores.length === 0 ? (
-            <p className="text-sm text-[var(--color-muted-foreground)]">
-              Дэлгүүр алга байна.
-            </p>
-          ) : (
-            <select
-              value={storeId}
-              onChange={(e) => setStoreId(e.target.value)}
-              className="w-full max-w-md rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
-            >
-              <option value="">— Дэлгүүр сонгоно уу —</option>
-              {storesByOrg.map(([org, list]) => (
-                <optgroup key={org} label={org}>
-                  {list.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      {s.name} ({s.camera_count} камер)
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
-          )}
-        </CardContent>
-      </Card>
+      {/* «Global, all stores» callout — replaces the old store picker. */}
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 px-4 py-3">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-primary)]" />
+        <p className="text-sm text-[var(--color-muted-foreground)]">
+          Энэ тохиргоо нь <strong className="text-[var(--color-foreground)]">бүх дэлгүүрийн
+          бүх камерт нэг ижил</strong> үйлчилнэ. Хадгалмагц бүх агент ~1 минутын дотор
+          шинэ утгыг автоматаар авна.
+        </p>
+      </div>
 
       {err && <p className="mb-4 text-sm text-[var(--color-danger)]">{err}</p>}
 
-      {storeId && loadingCfg && (
+      {loadingCfg && (
         <div className="p-8">
           <Spinner />
         </div>
       )}
 
-      {storeId && view && !loadingCfg && (
+      {view && !loadingCfg && (
         <>
           {/* Status bar */}
           <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/40 px-4 py-3 text-sm">
-            <Info className="h-4 w-4 shrink-0 text-[var(--color-primary)]" />
             <span className="text-[var(--color-muted-foreground)]">
               Хувилбар <strong className="text-[var(--color-foreground)]">v{view.version}</strong>
             </span>
@@ -549,7 +490,7 @@ export function EdgeConfigPage() {
             <span className="text-[var(--color-muted-foreground)]">
               ·{" "}
               {overrideCount === 0 ? (
-                "Бүх утга анхдагч (override алга)"
+                "Бүх утга анхдагч (өөрчлөлт алга)"
               ) : (
                 <Badge tone="warning">{overrideCount} өөрчлөлт</Badge>
               )}
