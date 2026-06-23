@@ -238,6 +238,17 @@ export interface EdgeConfigPayload {
   w_exit_after_conceal: number;
   w_repeated_shelf: number;
   repeated_shelf_threshold: number;
+  // per-behaviour timing gates (sec; 0 = every frame)
+  interval_holding: number;
+  mindur_holding: number;
+  interval_wrist_torso: number;
+  mindur_wrist_torso: number;
+  interval_conceal: number;
+  mindur_conceal: number;
+  interval_repeated_shelf: number;
+  mindur_repeated_shelf: number;
+  interval_exit_after_conceal: number;
+  mindur_exit_after_conceal: number;
   reach_frac: number;
   near_frac: number;
   min_kp_conf: number;
