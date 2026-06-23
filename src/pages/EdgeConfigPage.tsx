@@ -10,12 +10,15 @@ import {
 } from "@chipmo-sentry/ui-kit";
 import {
   Camera,
+  ChevronDown,
+  ChevronRight,
   HardDriveDownload,
   Info,
   MonitorCog,
   RotateCcw,
   Save,
   ShieldAlert,
+  SlidersHorizontal,
   type LucideIcon,
 } from "lucide-react";
 import { Fragment, useEffect, useMemo, useState } from "react";
@@ -91,6 +94,9 @@ interface FieldGroup {
   icon: LucideIcon;
   intro?: string;
   fields: EdgeField[];
+  /** Expert tuning the operator rarely touches → hidden behind a collapsed
+   * «Нарийн тохиргоо» section so the page isn't overwhelming. */
+  advanced?: boolean;
 }
 
 // Grouped so the operator meets the founder's core knobs first ("which movement
@@ -229,6 +235,7 @@ const GROUPS: FieldGroup[] = [
   {
     title: "Геометр ба мэдрэмж",
     icon: MonitorCog,
+    advanced: true,
     intro:
       "Хөдөлгөөнийг хэр ойроос «барих/нуух» гэж тооцох, track-ийг хэр удаан хадгалах нарийн тохиргоо. Ихэвчлэн анхдагчаар орхино.",
     fields: [
@@ -292,6 +299,7 @@ const GROUPS: FieldGroup[] = [
   {
     title: "Илрүүлэлт (YOLO)",
     icon: Camera,
+    advanced: true,
     fields: [
       {
         key: "person_conf",
@@ -331,6 +339,7 @@ const GROUPS: FieldGroup[] = [
   {
     title: "Бичлэг ба cloud руу илгээх",
     icon: HardDriveDownload,
+    advanced: true,
     fields: [
       {
         key: "pre_sec",
@@ -565,7 +574,7 @@ export function EdgeConfigPage() {
             onReset={resetField}
           />
 
-          {GROUPS.map((group) => (
+          {GROUPS.filter((g) => !g.advanced).map((group) => (
             <ConfigGroup
               key={group.title}
               group={group}
@@ -575,6 +584,16 @@ export function EdgeConfigPage() {
               onReset={resetField}
             />
           ))}
+
+          {/* Advanced/expert tuning — collapsed by default so the page isn't
+              overwhelming (founder: "зарим тохиргоо хэрэг үү, толгой эргүүлж байна"). */}
+          <AdvancedSection
+            groups={GROUPS.filter((g) => g.advanced)}
+            draft={draft}
+            disabled={saving}
+            onChange={setField}
+            onReset={resetField}
+          />
 
           {/* Save / revert / reset-all bar */}
           <div className="sticky bottom-0 mt-6 flex items-center justify-end gap-3 border-t border-[var(--color-border)] bg-[var(--color-background)]/95 py-4 backdrop-blur">
@@ -652,6 +671,59 @@ function NumCell({
         overridden ? "border-[var(--color-warning)]" : "border-[var(--color-border)]"
       }`}
     />
+  );
+}
+
+/** Collapsible wrapper for the expert/rarely-touched groups (geometry, YOLO,
+ * clip) — collapsed by default so the operator only sees the essential knobs. */
+function AdvancedSection({
+  groups,
+  draft,
+  disabled,
+  onChange,
+  onReset,
+}: {
+  groups: FieldGroup[];
+  draft: Record<string, number | boolean>;
+  disabled: boolean;
+  onChange: (key: FieldKey, value: number | boolean) => void;
+  onReset: (key: FieldKey) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  if (groups.length === 0) return null;
+  return (
+    <div className="mb-4">
+      <button
+        type="button"
+        onClick={() => setOpen((o) => !o)}
+        className="flex w-full items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/30 px-4 py-3 text-left text-sm hover:bg-[var(--color-muted)]/60"
+      >
+        {open ? (
+          <ChevronDown className="h-4 w-4 shrink-0" />
+        ) : (
+          <ChevronRight className="h-4 w-4 shrink-0" />
+        )}
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)]" />
+        <span className="font-medium">Нарийн тохиргоо (мэргэжлийн)</span>
+        <span className="text-xs text-[var(--color-muted-foreground)]">
+          — илрүүлэлт, геометр, бичлэг. Анхдагч утга зөв; ихэвчлэн хүрэх шаардлагагүй.
+        </span>
+      </button>
+      {open && (
+        <div className="mt-3">
+          {groups.map((group) => (
+            <ConfigGroup
+              key={group.title}
+              group={group}
+              draft={draft}
+              disabled={disabled}
+              onChange={onChange}
+              onReset={onReset}
+            />
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
