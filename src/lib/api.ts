@@ -234,6 +234,10 @@ export interface EdgeConfigPayload {
   w_holding: number;
   w_conceal: number;
   w_wrist_torso: number;
+  // docs/29 zone behaviours
+  w_exit_after_conceal: number;
+  w_repeated_shelf: number;
+  repeated_shelf_threshold: number;
   reach_frac: number;
   near_frac: number;
   min_kp_conf: number;
