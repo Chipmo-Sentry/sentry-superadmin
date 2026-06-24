@@ -17,7 +17,12 @@ import {
 } from "lucide-react";
 import { useEffect, useState } from "react";
 
-import { admin, type AlertAnalytics, type FeedbackAnalytics } from "@/lib/api";
+import {
+  admin,
+  type AlertAnalytics,
+  type FeedbackAnalytics,
+  type QualityAnalytics,
+} from "@/lib/api";
 import { categoryLabel } from "@/lib/labels";
 import type { AdminStats } from "@/lib/types";
 
@@ -196,6 +201,146 @@ function FeedbackAnalyticsSection() {
   );
 }
 
+function DetectionQualitySection() {
+  const [data, setData] = useState<QualityAnalytics | null>(null);
+  const [range, setRange] = useState("30d");
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    setData(null);
+    admin.qualityAnalytics(range).then(
+      (d) => !cancelled && setData(d),
+      (e) => !cancelled && setError(e instanceof Error ? e.message : "Алдаа"),
+    );
+    return () => {
+      cancelled = true;
+    };
+  }, [range]);
+
+  const ranges = [
+    { k: "24h", l: "24ц" },
+    { k: "7d", l: "7 хоног" },
+    { k: "30d", l: "30 хоног" },
+  ];
+  const pct = (v: number | null) => (v === null ? "—" : `${Math.round(v * 100)}%`);
+
+  return (
+    <Card>
+      <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
+        <CardTitle className="text-base">Илрүүлэлтийн чанар</CardTitle>
+        <div className="flex gap-1">
+          {ranges.map((r) => (
+            <button
+              key={r.k}
+              onClick={() => setRange(r.k)}
+              className={`rounded px-2 py-1 text-xs ${
+                range === r.k
+                  ? "bg-[var(--color-primary)] text-white"
+                  : "bg-[var(--color-muted)] text-[var(--color-muted-foreground)]"
+              }`}
+            >
+              {r.l}
+            </button>
+          ))}
+        </div>
+      </CardHeader>
+      <CardContent>
+        {error ? (
+          <p className="text-sm text-[var(--color-danger)]">{error}</p>
+        ) : data === null ? (
+          <Spinner />
+        ) : data.labeled === 0 ? (
+          <p className="text-sm text-[var(--color-muted-foreground)]">
+            Ажилтнууд сэжгийг зөв/худал гэж тэмдэглэхэд илрүүлэлтийн нарийвчлал (precision),
+            итгэлийн калибровк, өдрийн худал дохио энд гарч ирнэ. ({data.total_alerts} сэжиг,
+            0 шошготой)
+          </p>
+        ) : (
+          <div className="space-y-5">
+            {/* headline metric tiles */}
+            <div className="grid grid-cols-3 gap-3">
+              <div className="rounded-[var(--radius)] bg-[var(--color-muted)] p-3">
+                <div className="text-xs text-[var(--color-muted-foreground)]">
+                  Нарийвчлал (precision)
+                </div>
+                <div className="text-2xl font-semibold tabular-nums">{pct(data.precision)}</div>
+                <div className="text-xs text-[var(--color-muted-foreground)]">
+                  ✓{data.tp} / ✗{data.fp}
+                </div>
+              </div>
+              <div className="rounded-[var(--radius)] bg-[var(--color-muted)] p-3">
+                <div className="text-xs text-[var(--color-muted-foreground)]">Хянасан хувь</div>
+                <div className="text-2xl font-semibold tabular-nums">{pct(data.coverage)}</div>
+                <div className="text-xs text-[var(--color-muted-foreground)]">
+                  {data.labeled} / {data.total_alerts} сэжиг
+                </div>
+              </div>
+              <div className="rounded-[var(--radius)] bg-[var(--color-muted)] p-3">
+                <div className="text-xs text-[var(--color-muted-foreground)]">
+                  Худал дохио / хоног
+                </div>
+                <div className="text-2xl font-semibold tabular-nums">
+                  {data.false_alerts_per_day}
+                </div>
+                <div className="text-xs text-[var(--color-muted-foreground)]">
+                  ажилтанд харагдсан
+                </div>
+              </div>
+            </div>
+
+            {/* per-category precision */}
+            {data.by_category.length > 0 && (
+              <div className="space-y-1.5">
+                <div className="text-sm font-medium">Ангилал бүрийн нарийвчлал</div>
+                {data.by_category.map((c) => (
+                  <div key={c.category} className="flex items-center gap-3 text-sm">
+                    <span className="w-28 shrink-0">{categoryLabel(c.category)}</span>
+                    <div className="h-3 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
+                      <div
+                        className="h-full bg-[#22c55e]"
+                        style={{ width: `${(c.precision ?? 0) * 100}%` }}
+                      />
+                    </div>
+                    <span className="w-28 shrink-0 text-right text-xs text-[var(--color-muted-foreground)]">
+                      {pct(c.precision)} зөв (✓{c.tp}/✗{c.fp})
+                    </span>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* confidence calibration — does the model's confidence track truth? */}
+            <div className="space-y-1.5">
+              <div className="text-sm font-medium">
+                Итгэлийн калибровк{" "}
+                <span className="text-xs font-normal text-[var(--color-muted-foreground)]">
+                  (өндөр итгэл → өндөр зөв байх ёстой)
+                </span>
+              </div>
+              {data.by_confidence.map((b) => (
+                <div key={b.bucket} className="flex items-center gap-3 text-sm">
+                  <span className="w-24 shrink-0 tabular-nums">{b.bucket}</span>
+                  <div className="h-3 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
+                    <div
+                      className="h-full bg-[var(--color-primary)]"
+                      style={{ width: `${(b.tp_rate ?? 0) * 100}%` }}
+                    />
+                  </div>
+                  <span className="w-28 shrink-0 text-right text-xs text-[var(--color-muted-foreground)]">
+                    {b.tp_rate === null ? "— дата алга" : `${pct(b.tp_rate)} зөв`} (
+                    {b.tp + b.fp})
+                  </span>
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
 export function DashboardPage() {
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [error, setError] = useState<string | null>(null);
@@ -232,6 +377,7 @@ export function DashboardPage() {
               </Card>
             ))}
           </div>
+          <DetectionQualitySection />
           <AlertAnalyticsSection />
           <FeedbackAnalyticsSection />
         </>
