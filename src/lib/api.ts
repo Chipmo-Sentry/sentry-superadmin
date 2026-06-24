@@ -185,6 +185,10 @@ export const admin = {
     request<FeedbackAnalytics>(
       `/api/v1/admin/analytics/feedback?range=${encodeURIComponent(range)}`,
     ),
+  qualityAnalytics: (range: string) =>
+    request<QualityAnalytics>(
+      `/api/v1/admin/analytics/quality?range=${encodeURIComponent(range)}`,
+    ),
 
   /** Recent alerts across ALL orgs — one row per problematic clip's pipeline
    * trace (camera → behaviours → VLM → decision → review). Newest first;
@@ -381,6 +385,34 @@ export interface FeedbackAnalytics {
   totals: { true_positive: number; false_positive: number; unclear: number };
   by_category: Record<string, FeedbackCategoryStat>;
   suggestions: FeedbackSuggestion[];
+}
+
+/** Detection-quality metrics derived from staff feedback. */
+export interface QualityCategoryStat {
+  category: string;
+  tp: number;
+  fp: number;
+  unclear: number;
+  precision: number | null;
+}
+export interface QualityConfidenceBucket {
+  bucket: string;
+  tp: number;
+  fp: number;
+  tp_rate: number | null;
+}
+export interface QualityAnalytics {
+  range: string;
+  total_alerts: number;
+  labeled: number;
+  coverage: number;
+  tp: number;
+  fp: number;
+  unclear: number;
+  precision: number | null;
+  by_category: QualityCategoryStat[];
+  by_confidence: QualityConfidenceBucket[];
+  false_alerts_per_day: number;
 }
 
 /** Alert breakdown for the dashboard (docs/19 Phase 2). */
