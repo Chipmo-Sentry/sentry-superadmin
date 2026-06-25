@@ -28,7 +28,7 @@ import { Fragment, useEffect, useState } from "react";
 
 import { NodeMetricsChart } from "@/components/NodeMetricsChart";
 
-import { admin } from "@/lib/api";
+import { admin, type StoreAdminRow } from "@/lib/api";
 import type { AiNodePairingCode, AiNodePublic } from "@/lib/types";
 
 // VLM providers OFFERED in the UI = those actually pulled/runnable on a node.
@@ -112,6 +112,18 @@ function parseHealth(raw: string | null): Record<string, boolean> | null {
       : null;
   } catch {
     return null;
+  }
+}
+
+/** Whether the effective VLM provider actually needs Ollama. Missing key (older
+ * sentry-ai) → true, preserving the previous always-red-when-down behaviour. */
+function parseOllamaRequired(raw: string | null): boolean {
+  if (!raw) return true;
+  try {
+    const t = JSON.parse(raw) as { ollama_required?: unknown };
+    return t.ollama_required === false ? false : true;
+  } catch {
+    return true;
   }
 }
 
@@ -419,7 +431,13 @@ const HEALTH_LABELS: Record<string, string> = {
   tunnel: "Tunnel",
 };
 
-function HealthDots({ health }: { health: Record<string, boolean> | null }) {
+function HealthDots({
+  health,
+  ollamaRequired = true,
+}: {
+  health: Record<string, boolean> | null;
+  ollamaRequired?: boolean;
+}) {
   if (!health) return null;
   const keys = HEALTH_ORDER.filter((k) => k in health).concat(
     Object.keys(health).filter((k) => !HEALTH_ORDER.includes(k)),
@@ -427,23 +445,35 @@ function HealthDots({ health }: { health: Record<string, boolean> | null }) {
   if (keys.length === 0) return null;
   return (
     <div className="mt-1 flex flex-wrap gap-1.5">
-      {keys.map((k) => (
-        <span
-          key={k}
-          className="inline-flex items-center gap-1 text-xs"
-          title={health[k] ? "OK" : "DOWN"}
-        >
+      {keys.map((k) => {
+        // Ollama down is only a real fault when the effective VLM provider runs on
+        // it. On a vLLM node it's expected — show a neutral dot, not a red alarm.
+        const notApplicable = k === "ollama" && !ollamaRequired && !health[k];
+        const color = notApplicable
+          ? "var(--color-muted-foreground)"
+          : health[k]
+            ? "var(--color-success)"
+            : "var(--color-danger)";
+        return (
           <span
-            className="inline-block h-2 w-2 rounded-full"
-            style={{
-              backgroundColor: health[k]
-                ? "var(--color-success)"
-                : "var(--color-danger)",
-            }}
-          />
-          {HEALTH_LABELS[k] ?? k}
-        </span>
-      ))}
+            key={k}
+            className="inline-flex items-center gap-1 text-xs"
+            title={
+              notApplicable
+                ? "Идэвхтэй provider Ollama-г ашигладаггүй (vLLM) — хэвийн"
+                : health[k]
+                  ? "OK"
+                  : "DOWN"
+            }
+          >
+            <span
+              className="inline-block h-2 w-2 rounded-full"
+              style={{ backgroundColor: color }}
+            />
+            {HEALTH_LABELS[k] ?? k}
+          </span>
+        );
+      })}
     </div>
   );
 }
@@ -579,7 +609,10 @@ export function AiNodesPage() {
                     <TableCell className="max-w-md whitespace-normal break-words text-sm">
                       <TelemetryPills raw={n.telemetry} />
                       <div className="mt-1.5">
-                        <HealthDots health={parseHealth(n.telemetry)} />
+                        <HealthDots
+                          health={parseHealth(n.telemetry)}
+                          ollamaRequired={parseOllamaRequired(n.telemetry)}
+                        />
                       </div>
                     </TableCell>
                     <TableCell className="text-sm">
@@ -647,6 +680,8 @@ export function AiNodesPage() {
         </Card>
       ) : null}
 
+      <StorePushTargets />
+
       <PairingCodeModal pairing={pairing} onClose={() => setPairing(null)} />
       <EditNodeModal
         node={editing}
@@ -657,6 +692,106 @@ export function AiNodesPage() {
         }}
       />
     </div>
+  );
+}
+
+/** Per-store cloud push target editor. The store's agent pushes its camera RTSP
+ * to this base; when a vast.ai instance restarts (new IP/port) the old value goes
+ * stale → every camera shows "push тасарсан". Editing here repoints it live (the
+ * agent picks it up on its next stream-config poll) with no backend redeploy.
+ * Empty = fall back to the global AGENT_STREAM_PUSH_URL env. */
+function StorePushTargets() {
+  const [stores, setStores] = useState<StoreAdminRow[] | null>(null);
+  const [drafts, setDrafts] = useState<Record<string, string>>({});
+  const [saving, setSaving] = useState<string | null>(null);
+  const [err, setErr] = useState<string | null>(null);
+  const [savedId, setSavedId] = useState<string | null>(null);
+
+  async function load() {
+    try {
+      const rows = await admin.listStores();
+      setStores(rows);
+      setDrafts(Object.fromEntries(rows.map((s) => [s.id, s.agent_stream_push_url ?? ""])));
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Алдаа");
+    }
+  }
+
+  useEffect(() => {
+    void load();
+  }, []);
+
+  async function save(store: StoreAdminRow) {
+    setSaving(store.id);
+    setErr(null);
+    try {
+      const value = (drafts[store.id] ?? "").trim();
+      const updated = await admin.updateStorePushUrl(store.id, value);
+      setStores((prev) =>
+        (prev ?? []).map((s) => (s.id === store.id ? updated : s)),
+      );
+      setSavedId(store.id);
+      setTimeout(() => setSavedId((id) => (id === store.id ? null : id)), 2000);
+    } catch (e) {
+      setErr(e instanceof Error ? e.message : "Хадгалж чадсангүй");
+    } finally {
+      setSaving(null);
+    }
+  }
+
+  if (!stores || stores.length === 0) return null;
+
+  return (
+    <Card>
+      <CardContent className="space-y-4 p-6">
+        <div>
+          <h2 className="text-lg font-semibold">Камер push зорилт (дэлгүүр бүрээр)</h2>
+          <p className="text-sm text-[var(--color-muted-foreground)]">
+            Дэлгүүрийн агент камеруудаа энэ RTSP хаяг руу түлхдэг. vast.ai дахин
+            асаахад IP/порт өөрчлөгдвөл энд шинэчилнэ — backend дахин deploy
+            хийхгүй. Хоосон = глобал тохиргоо (AGENT_STREAM_PUSH_URL).
+          </p>
+        </div>
+        {err && <p className="text-sm text-[var(--color-danger)]">{err}</p>}
+        <div className="space-y-3">
+          {stores.map((s) => {
+            const dirty = (drafts[s.id] ?? "") !== (s.agent_stream_push_url ?? "");
+            return (
+              <div key={s.id} className="flex flex-wrap items-end gap-3">
+                <Field
+                  label={`${s.name} · ${s.organization_name}`}
+                  hint={
+                    s.agent_stream_push_url
+                      ? "Per-store override идэвхтэй"
+                      : "Глобал env ашиглаж байна"
+                  }
+                  className="min-w-[20rem] flex-1"
+                >
+                  <Input
+                    placeholder="rtsp://116.127.115.18:8554"
+                    value={drafts[s.id] ?? ""}
+                    onChange={(e) =>
+                      setDrafts((d) => ({ ...d, [s.id]: e.target.value }))
+                    }
+                  />
+                </Field>
+                <Button
+                  size="sm"
+                  disabled={!dirty || saving === s.id}
+                  onClick={() => void save(s)}
+                >
+                  {saving === s.id
+                    ? "Хадгалж байна…"
+                    : savedId === s.id
+                      ? "✓ Хадгаллаа"
+                      : "Хадгалах"}
+                </Button>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 

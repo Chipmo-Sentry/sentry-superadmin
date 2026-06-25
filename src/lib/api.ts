@@ -201,6 +201,14 @@ export const admin = {
   /** Every store across all orgs (id, name, org name, camera count). */
   listStores: () => request<StoreAdminRow[]>("/api/v1/admin/stores"),
 
+  /** Repoint a store's cloud push target (where its agent pushes camera streams).
+   * Empty string clears it back to the global AGENT_STREAM_PUSH_URL env. */
+  updateStorePushUrl: (storeId: string, agentStreamPushUrl: string | null) =>
+    request<StoreAdminRow>(`/api/v1/admin/stores/${encodeURIComponent(storeId)}`, {
+      method: "PATCH",
+      body: JSON.stringify({ agent_stream_push_url: agentStreamPushUrl }),
+    }),
+
   /** The ONE global edge (agent-pc) behaviour-engine config: raw overrides +
    * version + the effective merged config EVERY store's agents receive. */
   getGlobalEdgeConfig: () =>
@@ -224,6 +232,8 @@ export interface StoreAdminRow {
   organization_id: string;
   organization_name: string;
   camera_count: number;
+  /** Per-store cloud push target; null → global AGENT_STREAM_PUSH_URL env. */
+  agent_stream_push_url: string | null;
 }
 
 /** The 24 edge tunables + monotonic version (the effective merged config the
