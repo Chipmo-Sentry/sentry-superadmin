@@ -434,9 +434,11 @@ const HEALTH_LABELS: Record<string, string> = {
 function HealthDots({
   health,
   ollamaRequired = true,
+  provider = null,
 }: {
   health: Record<string, boolean> | null;
   ollamaRequired?: boolean;
+  provider?: ProviderStatus | null;
 }) {
   if (!health) return null;
   const keys = HEALTH_ORDER.filter((k) => k in health).concat(
@@ -446,25 +448,43 @@ function HealthDots({
   return (
     <div className="mt-1 flex flex-wrap gap-1.5">
       {keys.map((k) => {
-        // Ollama down is only a real fault when the effective VLM provider runs on
-        // it. On a vLLM node it's expected — show a neutral dot, not a red alarm.
-        const notApplicable = k === "ollama" && !ollamaRequired && !health[k];
-        const color = notApplicable
-          ? "var(--color-muted-foreground)"
-          : health[k]
-            ? "var(--color-success)"
-            : "var(--color-danger)";
+        // On a vLLM node the "ollama" health slot is meaningless (Ollama isn't
+        // installed). Show a real vLLM connection dot instead, coloured by the
+        // node's reported provider readiness — so you SEE that the verify model is
+        // actually connected, not a stale Ollama alarm.
+        const isVllmSlot = k === "ollama" && !ollamaRequired;
+        if (isVllmSlot) {
+          const ready = provider?.ready;
+          const color =
+            ready === true
+              ? "var(--color-success)"
+              : ready === false || provider?.error
+                ? "var(--color-danger)"
+                : "var(--color-muted-foreground)";
+          const title =
+            ready === true
+              ? `vLLM холбогдсон${provider?.effective ? ` · ${provider.effective}` : ""}`
+              : provider?.error
+                ? `vLLM: ${provider.error}`
+                : ready === false
+                  ? "vLLM бэлэн биш"
+                  : "vLLM төлөв тайлагнаагүй";
+          return (
+            <span key={k} className="inline-flex items-center gap-1 text-xs" title={title}>
+              <span
+                className="inline-block h-2 w-2 rounded-full"
+                style={{ backgroundColor: color }}
+              />
+              vLLM
+            </span>
+          );
+        }
+        const color = health[k] ? "var(--color-success)" : "var(--color-danger)";
         return (
           <span
             key={k}
             className="inline-flex items-center gap-1 text-xs"
-            title={
-              notApplicable
-                ? "Идэвхтэй provider Ollama-г ашигладаггүй (vLLM) — хэвийн"
-                : health[k]
-                  ? "OK"
-                  : "DOWN"
-            }
+            title={health[k] ? "OK" : "DOWN"}
           >
             <span
               className="inline-block h-2 w-2 rounded-full"
@@ -612,6 +632,7 @@ export function AiNodesPage() {
                         <HealthDots
                           health={parseHealth(n.telemetry)}
                           ollamaRequired={parseOllamaRequired(n.telemetry)}
+                          provider={parseProviderStatus(n.telemetry)}
                         />
                       </div>
                     </TableCell>
