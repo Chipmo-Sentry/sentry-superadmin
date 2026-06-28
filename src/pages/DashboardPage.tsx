@@ -82,8 +82,8 @@ function AlertAnalyticsSection() {
               onClick={() => setRange(r.k)}
               className={`rounded px-2 py-0.5 text-xs ${
                 range === r.k
-                  ? "bg-[var(--color-primary)] text-white"
-                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]"
+                  ? "bg-(--color-primary) text-white"
+                  : "text-(--color-muted-foreground) hover:bg-(--color-muted)"
               }`}
             >
               {r.l}
@@ -93,24 +93,24 @@ function AlertAnalyticsSection() {
       </CardHeader>
       <CardContent>
         {error ? (
-          <p className="text-sm text-[var(--color-danger)]">{error}</p>
+          <p className="text-sm text-(--color-danger)">{error}</p>
         ) : data === null ? (
           <Spinner />
         ) : data.total === 0 ? (
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm text-(--color-muted-foreground)">
             Энэ хугацаанд сэжигтэй үйлдэл бүртгэгдээгүй.
           </p>
         ) : (
           <div className="space-y-2">
-            <div className="text-sm text-[var(--color-muted-foreground)]">
-              Нийт <span className="font-semibold text-[var(--color-foreground)]">{data.total}</span> сэжиг
+            <div className="text-sm text-(--color-muted-foreground)">
+              Нийт <span className="font-semibold text-(--color-foreground)">{data.total}</span> сэжиг
             </div>
             {cats.map(([cat, n]) => (
               <div key={cat} className="flex items-center gap-3">
                 <span className="w-28 shrink-0 text-sm">
                   {categoryLabel(cat)}
                 </span>
-                <div className="h-4 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
+                <div className="h-4 flex-1 overflow-hidden rounded bg-(--color-muted)">
                   <div
                     className="h-full rounded"
                     style={{
@@ -152,16 +152,16 @@ function FeedbackAnalyticsSection() {
     <Card>
       <CardHeader className="pb-2">
         <CardTitle className="text-base">
-          Ажилтны санал → загвар сайжруулалт <span className="text-xs font-normal text-[var(--color-muted-foreground)]">(30 хоног)</span>
+          Ажилтны санал → загвар сайжруулалт <span className="text-xs font-normal text-(--color-muted-foreground)">(30 хоног)</span>
         </CardTitle>
       </CardHeader>
       <CardContent>
         {error ? (
-          <p className="text-sm text-[var(--color-danger)]">{error}</p>
+          <p className="text-sm text-(--color-danger)">{error}</p>
         ) : data === null ? (
           <Spinner />
         ) : data.total === 0 ? (
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm text-(--color-muted-foreground)">
             Ажилтнууд сэжгийг зөв/худал гэж тэмдэглэхэд энд статистик + тааруулах санал гарч ирнэ.
           </p>
         ) : (
@@ -169,26 +169,26 @@ function FeedbackAnalyticsSection() {
             <div className="flex gap-4 text-sm">
               <span className="text-[#22c55e]">✓ Зөв: {data.totals.true_positive}</span>
               <span className="text-[#ef4444]">✗ Худал: {data.totals.false_positive}</span>
-              <span className="text-[var(--color-muted-foreground)]">? Тодорхойгүй: {data.totals.unclear}</span>
+              <span className="text-(--color-muted-foreground)">? Тодорхойгүй: {data.totals.unclear}</span>
             </div>
             <div className="space-y-1.5">
               {cats.map(([cat, c]) => (
                 <div key={cat} className="flex items-center gap-3 text-sm">
                   <span className="w-28 shrink-0">{categoryLabel(cat)}</span>
-                  <div className="h-3 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
+                  <div className="h-3 flex-1 overflow-hidden rounded bg-(--color-muted)">
                     <div className="h-full bg-[#ef4444]" style={{ width: `${c.fp_rate * 100}%` }} />
                   </div>
-                  <span className="w-24 shrink-0 text-right text-xs text-[var(--color-muted-foreground)]">
+                  <span className="w-24 shrink-0 text-right text-xs text-(--color-muted-foreground)">
                     {Math.round(c.fp_rate * 100)}% худал ({c.total})
                   </span>
                 </div>
               ))}
             </div>
             {data.suggestions.length > 0 && (
-              <div className="space-y-1.5 rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-muted)] p-3">
+              <div className="space-y-1.5 rounded-(--radius) border border-(--color-border) bg-(--color-muted) p-3">
                 <div className="text-sm font-medium">💡 Тааруулах санал</div>
                 {data.suggestions.map((s) => (
-                  <p key={s.category} className="text-xs text-[var(--color-muted-foreground)]">
+                  <p key={s.category} className="text-xs text-(--color-muted-foreground)">
                     {s.hint}
                   </p>
                 ))}
@@ -236,8 +236,8 @@ function DetectionQualitySection() {
               onClick={() => setRange(r.k)}
               className={`rounded px-2 py-1 text-xs ${
                 range === r.k
-                  ? "bg-[var(--color-primary)] text-white"
-                  : "bg-[var(--color-muted)] text-[var(--color-muted-foreground)]"
+                  ? "bg-(--color-primary) text-white"
+                  : "bg-(--color-muted) text-(--color-muted-foreground)"
               }`}
             >
               {r.l}
@@ -247,11 +247,11 @@ function DetectionQualitySection() {
       </CardHeader>
       <CardContent>
         {error ? (
-          <p className="text-sm text-[var(--color-danger)]">{error}</p>
+          <p className="text-sm text-(--color-danger)">{error}</p>
         ) : data === null ? (
           <Spinner />
         ) : data.labeled === 0 ? (
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm text-(--color-muted-foreground)">
             Ажилтнууд сэжгийг зөв/худал гэж тэмдэглэхэд илрүүлэлтийн нарийвчлал (precision),
             итгэлийн калибровк, өдрийн худал дохио энд гарч ирнэ. ({data.total_alerts} сэжиг,
             0 шошготой)
@@ -260,30 +260,30 @@ function DetectionQualitySection() {
           <div className="space-y-5">
             {/* headline metric tiles */}
             <div className="grid grid-cols-3 gap-3">
-              <div className="rounded-[var(--radius)] bg-[var(--color-muted)] p-3">
-                <div className="text-xs text-[var(--color-muted-foreground)]">
+              <div className="rounded-(--radius) bg-(--color-muted) p-3">
+                <div className="text-xs text-(--color-muted-foreground)">
                   Нарийвчлал (precision)
                 </div>
                 <div className="text-2xl font-semibold tabular-nums">{pct(data.precision)}</div>
-                <div className="text-xs text-[var(--color-muted-foreground)]">
+                <div className="text-xs text-(--color-muted-foreground)">
                   ✓{data.tp} / ✗{data.fp}
                 </div>
               </div>
-              <div className="rounded-[var(--radius)] bg-[var(--color-muted)] p-3">
-                <div className="text-xs text-[var(--color-muted-foreground)]">Хянасан хувь</div>
+              <div className="rounded-(--radius) bg-(--color-muted) p-3">
+                <div className="text-xs text-(--color-muted-foreground)">Хянасан хувь</div>
                 <div className="text-2xl font-semibold tabular-nums">{pct(data.coverage)}</div>
-                <div className="text-xs text-[var(--color-muted-foreground)]">
+                <div className="text-xs text-(--color-muted-foreground)">
                   {data.labeled} / {data.total_alerts} сэжиг
                 </div>
               </div>
-              <div className="rounded-[var(--radius)] bg-[var(--color-muted)] p-3">
-                <div className="text-xs text-[var(--color-muted-foreground)]">
+              <div className="rounded-(--radius) bg-(--color-muted) p-3">
+                <div className="text-xs text-(--color-muted-foreground)">
                   Худал дохио / хоног
                 </div>
                 <div className="text-2xl font-semibold tabular-nums">
                   {data.false_alerts_per_day}
                 </div>
-                <div className="text-xs text-[var(--color-muted-foreground)]">
+                <div className="text-xs text-(--color-muted-foreground)">
                   ажилтанд харагдсан
                 </div>
               </div>
@@ -296,13 +296,13 @@ function DetectionQualitySection() {
                 {data.by_category.map((c) => (
                   <div key={c.category} className="flex items-center gap-3 text-sm">
                     <span className="w-28 shrink-0">{categoryLabel(c.category)}</span>
-                    <div className="h-3 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
+                    <div className="h-3 flex-1 overflow-hidden rounded bg-(--color-muted)">
                       <div
                         className="h-full bg-[#22c55e]"
                         style={{ width: `${(c.precision ?? 0) * 100}%` }}
                       />
                     </div>
-                    <span className="w-28 shrink-0 text-right text-xs text-[var(--color-muted-foreground)]">
+                    <span className="w-28 shrink-0 text-right text-xs text-(--color-muted-foreground)">
                       {pct(c.precision)} зөв (✓{c.tp}/✗{c.fp})
                     </span>
                   </div>
@@ -314,20 +314,20 @@ function DetectionQualitySection() {
             <div className="space-y-1.5">
               <div className="text-sm font-medium">
                 Итгэлийн калибровк{" "}
-                <span className="text-xs font-normal text-[var(--color-muted-foreground)]">
+                <span className="text-xs font-normal text-(--color-muted-foreground)">
                   (өндөр итгэл → өндөр зөв байх ёстой)
                 </span>
               </div>
               {data.by_confidence.map((b) => (
                 <div key={b.bucket} className="flex items-center gap-3 text-sm">
                   <span className="w-24 shrink-0 tabular-nums">{b.bucket}</span>
-                  <div className="h-3 flex-1 overflow-hidden rounded bg-[var(--color-muted)]">
+                  <div className="h-3 flex-1 overflow-hidden rounded bg-(--color-muted)">
                     <div
-                      className="h-full bg-[var(--color-primary)]"
+                      className="h-full bg-(--color-primary)"
                       style={{ width: `${(b.tp_rate ?? 0) * 100}%` }}
                     />
                   </div>
-                  <span className="w-28 shrink-0 text-right text-xs text-[var(--color-muted-foreground)]">
+                  <span className="w-28 shrink-0 text-right text-xs text-(--color-muted-foreground)">
                     {b.tp_rate === null ? "— дата алга" : `${pct(b.tp_rate)} зөв`} (
                     {b.tp + b.fp})
                   </span>
@@ -355,7 +355,7 @@ export function DashboardPage() {
   return (
     <div className="space-y-6 p-8">
       <h1 className="text-2xl font-semibold">Хяналтын самбар</h1>
-      {error && <p className="text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-(--color-danger)">{error}</p>}
       {stats === null && !error ? (
         <Spinner />
       ) : stats ? (
@@ -364,10 +364,10 @@ export function DashboardPage() {
             {CARDS.map(({ key, label, icon: Icon }) => (
               <Card key={key}>
                 <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-                  <CardTitle className="text-sm text-[var(--color-muted-foreground)]">
+                  <CardTitle className="text-sm text-(--color-muted-foreground)">
                     {label}
                   </CardTitle>
-                  <Icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                  <Icon className="h-4 w-4 text-(--color-muted-foreground)" />
                 </CardHeader>
                 <CardContent>
                   <span className="text-3xl font-semibold tabular-nums">

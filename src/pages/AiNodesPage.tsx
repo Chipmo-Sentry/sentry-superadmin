@@ -69,7 +69,7 @@ function Pill({ label, value }: { label?: string; value: string }) {
 
 /** Whole-machine telemetry as scannable chips instead of a run-on text blob. */
 function TelemetryPills({ raw }: { raw: string | null }) {
-  const muted = "text-[var(--color-muted-foreground)]";
+  const muted = "text-(--color-muted-foreground)";
   if (!raw) return <span className={muted}>—</span>;
   let t: Record<string, unknown>;
   try {
@@ -168,7 +168,7 @@ function ProviderSyncBadge({ desired, status }: { desired: string; status: Provi
   // No heartbeat with central-control feedback yet (old node / just paired).
   if (status === null || status.effective === null) {
     return (
-      <div className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+      <div className="mt-0.5 text-xs text-(--color-muted-foreground)">
         ⏳ серверээс хариу хүлээж байна…
       </div>
     );
@@ -215,7 +215,7 @@ function BreachModeSyncBadge({
 }) {
   if (effective === null) {
     return (
-      <div className="mt-0.5 text-xs text-[var(--color-muted-foreground)]">
+      <div className="mt-0.5 text-xs text-(--color-muted-foreground)">
         ⏳ серверээс хариу хүлээж байна…
       </div>
     );
@@ -331,11 +331,11 @@ function Kpi({
 }) {
   return (
     <div className="rounded-md p-3" style={{ background: "var(--color-background-secondary)" }}>
-      <div className="truncate text-xs text-[var(--color-muted-foreground)]">{label}</div>
+      <div className="truncate text-xs text-(--color-muted-foreground)">{label}</div>
       <div className="mt-0.5 text-xl font-medium" style={accent ? { color: accent } : undefined}>
         {value}
       </div>
-      {sub && <div className="mt-0.5 truncate text-xs text-[var(--color-muted-foreground)]">{sub}</div>}
+      {sub && <div className="mt-0.5 truncate text-xs text-(--color-muted-foreground)">{sub}</div>}
       {bar != null && (
         <div
           className="mt-1.5 h-1.5 w-full overflow-hidden rounded-full"
@@ -577,13 +577,13 @@ export function AiNodesPage() {
         </div>
       </div>
 
-      {error && <p className="text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-(--color-danger)">{error}</p>}
 
       {nodes === null && !error ? (
         <Spinner />
       ) : nodes && nodes.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-[var(--color-muted-foreground)]">
+          <CardContent className="p-8 text-center text-(--color-muted-foreground)">
             AI сервер бүртгэгдээгүй. "Холболтын код үүсгэх" дарж, суулгасан AI
             дээрээ оруулна уу.
           </CardContent>
@@ -608,7 +608,7 @@ export function AiNodesPage() {
                   <TableRow>
                     <TableCell>
                       <div className="font-medium">{n.name || n.hostname || "—"}</div>
-                      <div className="text-xs text-[var(--color-muted-foreground)]">
+                      <div className="text-xs text-(--color-muted-foreground)">
                         {n.hostname}
                         {n.gpu ? ` · ${n.gpu}` : ""}
                       </div>
@@ -626,7 +626,7 @@ export function AiNodesPage() {
                       )}
                     </TableCell>
                     <TableCell className="text-sm">{n.version || "—"}</TableCell>
-                    <TableCell className="max-w-md whitespace-normal break-words text-sm">
+                    <TableCell className="max-w-md whitespace-normal wrap-break-word text-sm">
                       <TelemetryPills raw={n.telemetry} />
                       <div className="mt-1.5">
                         <HealthDots
@@ -644,7 +644,7 @@ export function AiNodesPage() {
                         desired={n.provider}
                         status={parseProviderStatus(n.telemetry)}
                       />
-                      <div className="mt-2 border-t border-[var(--color-border)] pt-1">
+                      <div className="mt-2 border-t border-(--color-border) pt-1">
                         {BREACH_MODE_LABELS[n.breach_mode] ?? n.breach_mode}
                       </div>
                       <BreachModeSyncBadge
@@ -767,13 +767,13 @@ function StorePushTargets() {
       <CardContent className="space-y-4 p-6">
         <div>
           <h2 className="text-lg font-semibold">Камер push зорилт (дэлгүүр бүрээр)</h2>
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm text-(--color-muted-foreground)">
             Дэлгүүрийн агент камеруудаа энэ RTSP хаяг руу түлхдэг. vast.ai дахин
             асаахад IP/порт өөрчлөгдвөл энд шинэчилнэ — backend дахин deploy
             хийхгүй. Хоосон = глобал тохиргоо (AGENT_STREAM_PUSH_URL).
           </p>
         </div>
-        {err && <p className="text-sm text-[var(--color-danger)]">{err}</p>}
+        {err && <p className="text-sm text-(--color-danger)">{err}</p>}
         <div className="space-y-3">
           {stores.map((s) => {
             const dirty = (drafts[s.id] ?? "") !== (s.agent_stream_push_url ?? "");
@@ -830,14 +830,14 @@ function PairingCodeModal({
           <ModalTitle>AI сервер холбох код</ModalTitle>
         </ModalHeader>
         <div className="space-y-4 text-center">
-          <div className="inline-flex items-center gap-2 text-[var(--color-muted-foreground)]">
+          <div className="inline-flex items-center gap-2 text-(--color-muted-foreground)">
             <Cpu className="h-4 w-4" />
             Суулгасан AI-н тохиргоонд энэ кодыг оруулна уу
           </div>
           <div className="font-mono text-5xl font-bold tracking-[0.3em]">
             {pairing?.code}
           </div>
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm text-(--color-muted-foreground)">
             {pairing
               ? `Хүчинтэй: ${new Date(pairing.expires_at).toLocaleString("mn-MN")}`
               : ""}
@@ -987,7 +987,7 @@ function EditNodeModal({
             </Select>
           </Field>
           {/* Scan / VLM tuning — applied per breach on the node. */}
-          <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
+          <div className="space-y-3 rounded-md border border-(--color-border) p-3">
             <div className="text-sm font-medium">Шинжилгээ / VLM</div>
             <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
               <NumSetting
@@ -1032,7 +1032,7 @@ function EditNodeModal({
             />
             Идэвхтэй (унтраавал AI шинжилгээ зогсоно)
           </label>
-          {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+          {error && <p className="text-sm text-(--color-danger)">{error}</p>}
           <ModalFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
               Болих

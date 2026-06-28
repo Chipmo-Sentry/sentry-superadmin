@@ -54,7 +54,7 @@ export function OrgsPage() {
         </Button>
       </div>
 
-      {error && <p className="text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-(--color-danger)">{error}</p>}
 
       {orgs === null && !error ? (
         <Spinner />
@@ -90,7 +90,7 @@ export function OrgsPage() {
                     <TableCell>
                       <Badge tone="neutral">{o.slug}</Badge>
                     </TableCell>
-                    <TableCell className="text-[var(--color-muted-foreground)]">
+                    <TableCell className="text-(--color-muted-foreground)">
                       {new Date(o.created_at).toLocaleDateString("mn-MN")}
                     </TableCell>
                   </TableRow>
@@ -179,7 +179,7 @@ function CreateOrgModal({
               disabled={saving}
             />
           </Field>
-          {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+          {error && <p className="text-sm text-(--color-danger)">{error}</p>}
           <ModalFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
               Болих

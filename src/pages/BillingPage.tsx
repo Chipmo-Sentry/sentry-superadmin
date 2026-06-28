@@ -185,8 +185,8 @@ function RevenueChart({
               onClick={() => onRange(r.k)}
               className={`rounded px-2 py-0.5 text-xs ${
                 range === r.k
-                  ? "bg-[var(--color-primary)] text-white"
-                  : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]"
+                  ? "bg-(--color-primary) text-white"
+                  : "text-(--color-muted-foreground) hover:bg-(--color-muted)"
               }`}
             >
               {r.l}
@@ -198,7 +198,7 @@ function RevenueChart({
         {data === null ? (
           <Spinner />
         ) : points.length === 0 ? (
-          <p className="text-sm text-[var(--color-muted-foreground)]">
+          <p className="text-sm text-(--color-muted-foreground)">
             Энэ хугацаанд гүйлгээ бүртгэгдээгүй.
           </p>
         ) : (
@@ -428,17 +428,17 @@ function OrgBillingModal({
 
         <div className="grid gap-3 text-sm sm:grid-cols-3">
           <div>
-            <div className="text-[var(--color-muted-foreground)]">Үлдэгдэл</div>
+            <div className="text-(--color-muted-foreground)">Үлдэгдэл</div>
             <div
               className={`text-lg font-semibold tabular-nums ${
-                org.balance_mnt < 0 ? "text-[var(--color-danger)]" : ""
+                org.balance_mnt < 0 ? "text-(--color-danger)" : ""
               }`}
             >
               {mnt(org.balance_mnt)}
             </div>
           </div>
           <div>
-            <div className="text-[var(--color-muted-foreground)]">
+            <div className="text-(--color-muted-foreground)">
               Өдрийн тариф
             </div>
             <div className="text-lg font-semibold tabular-nums">
@@ -446,7 +446,7 @@ function OrgBillingModal({
             </div>
           </div>
           <div>
-            <div className="text-[var(--color-muted-foreground)]">
+            <div className="text-(--color-muted-foreground)">
               Дэлгүүр / камер
             </div>
             <div className="text-lg font-semibold tabular-nums">
@@ -458,7 +458,7 @@ function OrgBillingModal({
         <div className="grid gap-4 sm:grid-cols-2">
           {/* top-up */}
           <form
-            className="space-y-3 rounded-[var(--radius)] border border-[var(--color-border)] p-4"
+            className="space-y-3 rounded-(--radius) border border-(--color-border) p-4"
             onSubmit={onTopup}
           >
             <div className="font-medium">Цэнэглэх</div>
@@ -494,7 +494,7 @@ function OrgBillingModal({
 
           {/* emergency credit */}
           <form
-            className="space-y-3 rounded-[var(--radius)] border border-[var(--color-border)] p-4"
+            className="space-y-3 rounded-(--radius) border border-(--color-border) p-4"
             onSubmit={onGrantCredit}
           >
             <div className="flex items-center justify-between">
@@ -559,11 +559,11 @@ function OrgBillingModal({
         <div className="space-y-2">
           <div className="font-medium">Гүйлгээний түүх</div>
           {journalError ? (
-            <p className="text-sm text-[var(--color-danger)]">{journalError}</p>
+            <p className="text-sm text-(--color-danger)">{journalError}</p>
           ) : entries === null ? (
             <Spinner />
           ) : entries.length === 0 ? (
-            <p className="text-sm text-[var(--color-muted-foreground)]">
+            <p className="text-sm text-(--color-muted-foreground)">
               Гүйлгээ алга байна.
             </p>
           ) : (
@@ -581,11 +581,11 @@ function OrgBillingModal({
                 <TableBody>
                   {entries.map((e) => (
                     <TableRow key={e.id}>
-                      <TableCell className="whitespace-nowrap text-[var(--color-muted-foreground)]">
+                      <TableCell className="whitespace-nowrap text-(--color-muted-foreground)">
                         {formatDateTime(e.posted_at)}
                       </TableCell>
                       <TableCell>{KIND_LABEL[e.kind]}</TableCell>
-                      <TableCell className="text-xs text-[var(--color-muted-foreground)]">
+                      <TableCell className="text-xs text-(--color-muted-foreground)">
                         {ACCOUNT_LABEL[e.dr_account]} →{" "}
                         {ACCOUNT_LABEL[e.cr_account]}
                       </TableCell>
@@ -595,7 +595,7 @@ function OrgBillingModal({
                       <TableCell>
                         {e.description}
                         {e.charge_date && (
-                          <span className="text-xs text-[var(--color-muted-foreground)]">
+                          <span className="text-xs text-(--color-muted-foreground)">
                             {" "}
                             ({e.charge_date})
                           </span>
@@ -800,7 +800,7 @@ function CreatePromoModal({
             />
           </Field>
           {error && (
-            <p className="text-sm text-[var(--color-danger)]">{error}</p>
+            <p className="text-sm text-(--color-danger)">{error}</p>
           )}
           <div className="flex justify-end gap-2">
             <Button
@@ -909,7 +909,7 @@ function PromoSection({
                   <TableCell className="text-right tabular-nums">
                     {p.redeemed_count} / {p.max_redemptions}
                   </TableCell>
-                  <TableCell className="text-[var(--color-muted-foreground)]">
+                  <TableCell className="text-(--color-muted-foreground)">
                     {p.valid_until
                       ? `${formatDateTime(p.valid_until)} хүртэл`
                       : "Хугацаагүй"}
@@ -919,7 +919,7 @@ function PromoSection({
                       {p.active ? "Идэвхтэй" : "Идэвхгүй"}
                     </Badge>
                   </TableCell>
-                  <TableCell className="max-w-48 truncate text-[var(--color-muted-foreground)]">
+                  <TableCell className="max-w-48 truncate text-(--color-muted-foreground)">
                     {p.note || "—"}
                   </TableCell>
                   <TableCell>
@@ -1033,7 +1033,7 @@ export function BillingPage() {
         <div className="flex items-center justify-between">
           <h1 className="text-2xl font-semibold">Төлбөр</h1>
           {overview && (
-            <span className="text-sm text-[var(--color-muted-foreground)]">
+            <span className="text-sm text-(--color-muted-foreground)">
               Нийт өдрийн тариф: {mnt(overview.total_daily_rate_mnt)}
             </span>
           )}
@@ -1052,15 +1052,15 @@ export function BillingPage() {
               {kpis.map(({ label, value, icon: Icon, danger }) => (
                 <Card key={label}>
                   <CardHeader className="flex flex-row items-center justify-between gap-2 pb-2">
-                    <CardTitle className="text-sm text-[var(--color-muted-foreground)]">
+                    <CardTitle className="text-sm text-(--color-muted-foreground)">
                       {label}
                     </CardTitle>
-                    <Icon className="h-4 w-4 text-[var(--color-muted-foreground)]" />
+                    <Icon className="h-4 w-4 text-(--color-muted-foreground)" />
                   </CardHeader>
                   <CardContent>
                     <span
                       className={`text-2xl font-semibold tabular-nums ${
-                        danger ? "text-[var(--color-danger)]" : ""
+                        danger ? "text-(--color-danger)" : ""
                       }`}
                     >
                       {value}
@@ -1106,7 +1106,7 @@ export function BillingPage() {
                         >
                           <TableCell>
                             <div className="font-medium">{o.name}</div>
-                            <div className="text-xs text-[var(--color-muted-foreground)]">
+                            <div className="text-xs text-(--color-muted-foreground)">
                               {o.slug}
                             </div>
                           </TableCell>
@@ -1122,7 +1122,7 @@ export function BillingPage() {
                           <TableCell
                             className={`text-right font-medium tabular-nums ${
                               o.balance_mnt < 0
-                                ? "text-[var(--color-danger)]"
+                                ? "text-(--color-danger)"
                                 : ""
                             }`}
                           >
@@ -1133,12 +1133,12 @@ export function BillingPage() {
                               {STATUS_LABEL[o.status]}
                             </Badge>
                           </TableCell>
-                          <TableCell className="text-[var(--color-muted-foreground)]">
+                          <TableCell className="text-(--color-muted-foreground)">
                             {o.credit_until
                               ? formatDateTime(o.credit_until)
                               : "—"}
                           </TableCell>
-                          <TableCell className="text-[var(--color-muted-foreground)]">
+                          <TableCell className="text-(--color-muted-foreground)">
                             {o.last_topup_at
                               ? formatDate(o.last_topup_at)
                               : "—"}
