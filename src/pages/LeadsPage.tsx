@@ -83,19 +83,19 @@ export function LeadsPage() {
       <div className="flex items-center justify-between">
         <h1 className="text-2xl font-semibold">Demo хүсэлтүүд</h1>
         {leads && (
-          <span className="text-sm text-[var(--color-muted-foreground)]">
+          <span className="text-sm text-(--color-muted-foreground)">
             Нийт {leads.length}
           </span>
         )}
       </div>
 
-      {error && <p className="text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-(--color-danger)">{error}</p>}
 
       {leads === null && !error ? (
         <Spinner />
       ) : leads && leads.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-[var(--color-muted-foreground)]">
+          <CardContent className="p-8 text-center text-(--color-muted-foreground)">
             Одоогоор demo хүсэлт алга байна.
           </CardContent>
         </Card>
@@ -117,19 +117,19 @@ export function LeadsPage() {
               <TableBody>
                 {leads.map((lead) => (
                   <TableRow key={lead.id}>
-                    <TableCell className="whitespace-nowrap text-[var(--color-muted-foreground)]">
+                    <TableCell className="whitespace-nowrap text-(--color-muted-foreground)">
                       {formatDate(lead.created_at)}
                     </TableCell>
                     <TableCell>
                       <div className="font-medium">{lead.name || "—"}</div>
                       <a
                         href={`mailto:${lead.email}`}
-                        className="text-sm text-[var(--color-primary)] hover:underline"
+                        className="text-sm text-(--color-primary) hover:underline"
                       >
                         {lead.email}
                       </a>
                       {lead.phone && (
-                        <div className="text-sm text-[var(--color-muted-foreground)]">
+                        <div className="text-sm text-(--color-muted-foreground)">
                           {lead.phone}
                         </div>
                       )}

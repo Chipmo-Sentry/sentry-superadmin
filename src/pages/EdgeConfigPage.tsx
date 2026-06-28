@@ -516,10 +516,10 @@ export function EdgeConfigPage() {
     <div className="p-8">
       <div className="mb-5">
         <div className="mb-2 flex items-center gap-2">
-          <MonitorCog className="h-6 w-6 text-[var(--color-primary)]" />
+          <MonitorCog className="h-6 w-6 text-(--color-primary)" />
           <h1 className="text-2xl font-semibold">Edge тохиргоо — дэлгүүрийн AI хөдөлгүүр</h1>
         </div>
-        <p className="max-w-3xl text-sm text-[var(--color-muted-foreground)]">
+        <p className="max-w-3xl text-sm text-(--color-muted-foreground)">
           Дэлгүүрийн компьютер (agent-pc) дээр ажилладаг <strong>Stage-1 зан үйлийн
           хөдөлгүүр</strong>ийн тохиргоо: ямар хөдөлгөөнд хэдэн оноо нэмэгдэх, хэдэн
           оноонд сэжигтэй бичлэг үүсэхийг тодорхойлно. (Cloud дахь «Сэжиг шалгуур»
@@ -528,16 +528,16 @@ export function EdgeConfigPage() {
       </div>
 
       {/* «Global, all stores» callout — replaces the old store picker. */}
-      <div className="mb-5 flex items-start gap-3 rounded-lg border border-[var(--color-primary)]/30 bg-[var(--color-primary)]/5 px-4 py-3">
-        <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-primary)]" />
-        <p className="text-sm text-[var(--color-muted-foreground)]">
-          Энэ тохиргоо нь <strong className="text-[var(--color-foreground)]">бүх дэлгүүрийн
+      <div className="mb-5 flex items-start gap-3 rounded-lg border border-(--color-primary)/30 bg-(--color-primary)/5 px-4 py-3">
+        <Info className="mt-0.5 h-5 w-5 shrink-0 text-(--color-primary)" />
+        <p className="text-sm text-(--color-muted-foreground)">
+          Энэ тохиргоо нь <strong className="text-(--color-foreground)">бүх дэлгүүрийн
           бүх камерт нэг ижил</strong> үйлчилнэ. Хадгалмагц бүх агент ~1 минутын дотор
           шинэ утгыг автоматаар авна.
         </p>
       </div>
 
-      {err && <p className="mb-4 text-sm text-[var(--color-danger)]">{err}</p>}
+      {err && <p className="mb-4 text-sm text-(--color-danger)">{err}</p>}
 
       {loadingCfg && (
         <div className="p-8">
@@ -548,16 +548,16 @@ export function EdgeConfigPage() {
       {view && !loadingCfg && (
         <>
           {/* Status bar */}
-          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/40 px-4 py-3 text-sm">
-            <span className="text-[var(--color-muted-foreground)]">
-              Хувилбар <strong className="text-[var(--color-foreground)]">v{view.version}</strong>
+          <div className="mb-4 flex flex-wrap items-center gap-3 rounded-lg border border-(--color-border) bg-(--color-muted)/40 px-4 py-3 text-sm">
+            <span className="text-(--color-muted-foreground)">
+              Хувилбар <strong className="text-(--color-foreground)">v{view.version}</strong>
             </span>
             {view.updated_at && (
-              <span className="text-[var(--color-muted-foreground)]">
+              <span className="text-(--color-muted-foreground)">
                 · Шинэчлэгдсэн {new Date(view.updated_at).toLocaleString("mn-MN")}
               </span>
             )}
-            <span className="text-[var(--color-muted-foreground)]">
+            <span className="text-(--color-muted-foreground)">
               ·{" "}
               {overrideCount === 0 ? (
                 "Бүх утга анхдагч (өөрчлөлт алга)"
@@ -596,9 +596,9 @@ export function EdgeConfigPage() {
           />
 
           {/* Save / revert / reset-all bar */}
-          <div className="sticky bottom-0 mt-6 flex items-center justify-end gap-3 border-t border-[var(--color-border)] bg-[var(--color-background)]/95 py-4 backdrop-blur">
+          <div className="sticky bottom-0 mt-6 flex items-center justify-end gap-3 border-t border-(--color-border) bg-(--color-background)/95 py-4 backdrop-blur">
             {savedAt && !dirty && (
-              <span className="mr-auto text-xs text-[var(--color-success)]">
+              <span className="mr-auto text-xs text-(--color-success)">
                 ✓ Хадгалагдсан · {savedAt}
               </span>
             )}
@@ -636,7 +636,7 @@ function seedDraft(eff: EdgeConfigPayload): Record<string, number | boolean> {
 }
 
 const NUM_INPUT_CLASS =
-  "w-20 rounded-md border bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30";
+  "w-20 rounded-md border bg-(--color-background) px-2 py-1 text-right font-mono text-sm focus:outline-none focus:ring-2 focus:ring-(--color-ring)/30";
 
 /** A single numeric cell bound to draft[key]; highlights when overridden. */
 function NumCell({
@@ -668,7 +668,7 @@ function NumCell({
       disabled={disabled}
       onChange={(e) => onChange(fkey, e.target.value === "" ? 0 : Number(e.target.value))}
       className={`${NUM_INPUT_CLASS} ${
-        overridden ? "border-[var(--color-warning)]" : "border-[var(--color-border)]"
+        overridden ? "border-(--color-warning)" : "border-(--color-border)"
       }`}
     />
   );
@@ -696,16 +696,16 @@ function AdvancedSection({
       <button
         type="button"
         onClick={() => setOpen((o) => !o)}
-        className="flex w-full items-center gap-2 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/30 px-4 py-3 text-left text-sm hover:bg-[var(--color-muted)]/60"
+        className="flex w-full items-center gap-2 rounded-lg border border-(--color-border) bg-(--color-muted)/30 px-4 py-3 text-left text-sm hover:bg-(--color-muted)/60"
       >
         {open ? (
           <ChevronDown className="h-4 w-4 shrink-0" />
         ) : (
           <ChevronRight className="h-4 w-4 shrink-0" />
         )}
-        <SlidersHorizontal className="h-4 w-4 shrink-0 text-[var(--color-muted-foreground)]" />
+        <SlidersHorizontal className="h-4 w-4 shrink-0 text-(--color-muted-foreground)" />
         <span className="font-medium">Нарийн тохиргоо (мэргэжлийн)</span>
-        <span className="text-xs text-[var(--color-muted-foreground)]">
+        <span className="text-xs text-(--color-muted-foreground)">
           — илрүүлэлт, геометр, бичлэг. Анхдагч утга зөв; ихэвчлэн хүрэх шаардлагагүй.
         </span>
       </button>
@@ -745,7 +745,7 @@ function BehaviorTable({
     <Card className="mb-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <ShieldAlert className="h-4 w-4 text-[var(--color-primary)]" />
+          <ShieldAlert className="h-4 w-4 text-(--color-primary)" />
           Зан үйл — оноо ба хугацаа
         </CardTitle>
         <CardDescription className="mt-1">
@@ -756,9 +756,9 @@ function BehaviorTable({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-hidden rounded-lg border border-(--color-border)">
           <table className="w-full text-sm">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <thead className="border-b border-(--color-border) bg-(--color-muted) text-xs uppercase tracking-wider text-(--color-muted-foreground)">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Зан үйл</th>
                 <th className="px-3 py-2 text-right font-medium">Оноо</th>
@@ -773,10 +773,10 @@ function BehaviorTable({
                   (k) => draft[k] !== undefined && draft[k] !== DEFAULTS[k],
                 );
                 return (
-                  <tr key={b.scoreKey} className="border-t border-[var(--color-border)] align-top">
+                  <tr key={b.scoreKey} className="border-t border-(--color-border) align-top">
                     <td className="px-3 py-2.5">
                       <div className="font-medium">{b.label}</div>
-                      <p className="mt-0.5 max-w-md text-xs leading-relaxed text-[var(--color-muted-foreground)]">
+                      <p className="mt-0.5 max-w-md text-xs leading-relaxed text-(--color-muted-foreground)">
                         {b.desc}
                       </p>
                     </td>
@@ -802,7 +802,7 @@ function BehaviorTable({
                         }}
                         disabled={disabled || !dirtyRow}
                         title="Энэ мөрийг анхдагч руу буцаах"
-                        className="rounded p-1 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] disabled:opacity-30"
+                        className="rounded p-1 text-(--color-muted-foreground) hover:text-(--color-foreground) disabled:opacity-30"
                       >
                         <RotateCcw className="h-3.5 w-3.5" />
                       </button>
@@ -815,7 +815,7 @@ function BehaviorTable({
         </div>
         {/* Shelf-revisit count threshold (belongs with «Тавиур давтан зочлох»). */}
         <div className="mt-3 flex items-center gap-3 text-sm">
-          <span className="text-[var(--color-muted-foreground)]">
+          <span className="text-(--color-muted-foreground)">
             «Тавиур давтан зочлох» босго — хэдэн удаа очвол тооцох:
           </span>
           <NumCell fkey="repeated_shelf_threshold" draft={draft} disabled={disabled}
@@ -845,15 +845,15 @@ function ConfigGroup({
     <Card className="mb-4">
       <CardHeader>
         <CardTitle className="flex items-center gap-2 text-base">
-          <Icon className="h-4 w-4 text-[var(--color-primary)]" />
+          <Icon className="h-4 w-4 text-(--color-primary)" />
           {group.title}
         </CardTitle>
         {group.intro && <CardDescription className="mt-1">{group.intro}</CardDescription>}
       </CardHeader>
       <CardContent>
-        <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-hidden rounded-lg border border-(--color-border)">
           <table className="w-full text-sm">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <thead className="border-b border-(--color-border) bg-(--color-muted) text-xs uppercase tracking-wider text-(--color-muted-foreground)">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Тохиргоо</th>
                 <th className="hidden px-3 py-2 text-left font-medium sm:table-cell">
@@ -871,35 +871,35 @@ function ConfigGroup({
                 const overridden = cur !== undefined && cur !== def;
                 return (
                   <Fragment key={f.key}>
-                    <tr className="border-t border-[var(--color-border)] align-top">
+                    <tr className="border-t border-(--color-border) align-top">
                       <td className="px-3 py-2.5">
                         <div className="flex items-center gap-2 font-medium">
                           {f.label}
                           {overridden && <Badge tone="warning">өөрчилсөн</Badge>}
                         </div>
                         {f.unit && (
-                          <div className="text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+                          <div className="text-[10px] uppercase tracking-wide text-(--color-muted-foreground)">
                             {f.unit}
                           </div>
                         )}
-                        <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted-foreground)] sm:hidden">
+                        <p className="mt-1 text-xs leading-relaxed text-(--color-muted-foreground) sm:hidden">
                           {f.help}
                         </p>
                         {f.effect && (
-                          <p className="mt-1 text-xs leading-relaxed text-[var(--color-primary)] sm:hidden">
+                          <p className="mt-1 text-xs leading-relaxed text-(--color-primary) sm:hidden">
                             {f.effect}
                           </p>
                         )}
                       </td>
-                      <td className="hidden max-w-md px-3 py-2.5 text-xs leading-relaxed text-[var(--color-muted-foreground)] sm:table-cell">
+                      <td className="hidden max-w-md px-3 py-2.5 text-xs leading-relaxed text-(--color-muted-foreground) sm:table-cell">
                         {f.help}
                         {f.effect && (
-                          <span className="mt-1 block text-[var(--color-primary)]">
+                          <span className="mt-1 block text-(--color-primary)">
                             {f.effect}
                           </span>
                         )}
                       </td>
-                      <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-[var(--color-muted-foreground)]">
+                      <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-(--color-muted-foreground)">
                         {f.kind === "bool" ? (def ? "Тийм" : "Үгүй") : String(def)}
                       </td>
                       <td className="px-3 py-2.5 text-right">
@@ -922,10 +922,10 @@ function ConfigGroup({
                             onChange={(e) =>
                               onChange(f.key, e.target.value === "" ? 0 : Number(e.target.value))
                             }
-                            className={`w-24 rounded-md border bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30 ${
+                            className={`w-24 rounded-md border bg-(--color-background) px-2 py-1 text-right font-mono text-sm focus:outline-none focus:ring-2 focus:ring-(--color-ring)/30 ${
                               overridden
-                                ? "border-[var(--color-warning)]"
-                                : "border-[var(--color-border)] focus:border-[var(--color-ring)]"
+                                ? "border-(--color-warning)"
+                                : "border-(--color-border) focus:border-(--color-ring)"
                             }`}
                           />
                         )}
@@ -936,7 +936,7 @@ function ConfigGroup({
                           onClick={() => onReset(f.key)}
                           disabled={disabled || !overridden}
                           title="Анхдагч руу буцаах"
-                          className="rounded p-1 text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)] disabled:opacity-30"
+                          className="rounded p-1 text-(--color-muted-foreground) hover:text-(--color-foreground) disabled:opacity-30"
                         >
                           <RotateCcw className="h-3.5 w-3.5" />
                         </button>

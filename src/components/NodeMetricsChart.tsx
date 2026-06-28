@@ -130,7 +130,7 @@ function Chart({
   return (
     <div>
       <div className="mb-0.5 flex items-center justify-between text-xs">
-        <span className="text-[var(--color-muted-foreground)]">{label}</span>
+        <span className="text-(--color-muted-foreground)">{label}</span>
         <span className="font-medium" style={{ color }}>
           {latest}
         </span>
@@ -208,10 +208,10 @@ function Chart({
         </svg>
         {hp && (
           <div
-            className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded border border-[var(--color-border)] bg-[var(--color-background)] px-1.5 py-0.5 text-[10px] leading-tight shadow"
+            className="pointer-events-none absolute -top-1 z-10 -translate-x-1/2 -translate-y-full whitespace-nowrap rounded border border-(--color-border) bg-(--color-background) px-1.5 py-0.5 text-[10px] leading-tight shadow"
             style={{ left: `${tipLeftPct}%` }}
           >
-            <div className="text-[var(--color-muted-foreground)]">{fmtPrecise(hp.t, windowMs)}</div>
+            <div className="text-(--color-muted-foreground)">{fmtPrecise(hp.t, windowMs)}</div>
             <div className="font-medium" style={{ color }}>
               Бүх систем: {hp.label ?? "—"}
             </div>
@@ -221,13 +221,13 @@ function Chart({
           </div>
         )}
       </div>
-      <div className="mt-0.5 flex justify-between text-[10px] text-[var(--color-muted-foreground)]">
+      <div className="mt-0.5 flex justify-between text-[10px] text-(--color-muted-foreground)">
         {ticks.map((t, i) => (
           <span key={i}>{fmtTick(t, windowMs)}</span>
         ))}
       </div>
       {note && (
-        <p className="mt-0.5 text-[10px] italic text-[var(--color-muted-foreground)]">{note}</p>
+        <p className="mt-0.5 text-[10px] italic text-(--color-muted-foreground)">{note}</p>
       )}
     </div>
   );
@@ -297,7 +297,7 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
   const hasSentry = rows.some((r) => r.m.sentry_cpu_pct != null || r.m.sentry_ram_mb != null);
 
   return (
-    <div className="mt-3 min-w-0 overflow-x-hidden rounded-[var(--radius)] border border-[var(--color-border)] bg-[var(--color-background)] p-3">
+    <div className="mt-3 min-w-0 overflow-x-hidden rounded-(--radius) border border-(--color-border) bg-(--color-background) p-3">
       <div className="mb-3 flex flex-wrap items-center gap-1">
         {RANGES.map((r) => (
           <button
@@ -305,24 +305,24 @@ export function NodeMetricsChart({ nodeId }: { nodeId: string }) {
             onClick={() => setRange(r.key)}
             className={`rounded px-2 py-0.5 text-xs ${
               range === r.key
-                ? "bg-[var(--color-primary)] text-white"
-                : "text-[var(--color-muted-foreground)] hover:bg-[var(--color-muted)]"
+                ? "bg-(--color-primary) text-white"
+                : "text-(--color-muted-foreground) hover:bg-(--color-muted)"
             }`}
           >
             {r.label}
           </button>
         ))}
-        <span className="ml-auto text-[10px] text-[var(--color-muted-foreground)]">
+        <span className="ml-auto text-[10px] text-(--color-muted-foreground)">
           {hasSentry ? "── бүх систем · ╌╌ Sentry · " : ""}х.тэнхлэг: цаг хугацаа
         </span>
       </div>
 
       {error ? (
-        <p className="text-xs text-[var(--color-danger)]">{error}</p>
+        <p className="text-xs text-(--color-danger)">{error}</p>
       ) : data == null ? (
-        <p className="text-xs text-[var(--color-muted-foreground)]">Ачааллаж байна…</p>
+        <p className="text-xs text-(--color-muted-foreground)">Ачааллаж байна…</p>
       ) : rows.length === 0 ? (
-        <p className="text-xs text-[var(--color-muted-foreground)]">
+        <p className="text-xs text-(--color-muted-foreground)">
           Энэ хугацаанд өгөгдөл алга (heartbeat бүрт нэг цэг хадгална).
         </p>
       ) : (

@@ -43,7 +43,7 @@ export function Layout() {
 
   return (
     <div className="flex h-full">
-      <aside className="flex w-60 shrink-0 flex-col border-r border-[var(--color-border)] bg-[var(--color-muted)]">
+      <aside className="flex w-60 shrink-0 flex-col border-r border-(--color-border) bg-(--color-muted)">
         <div className="flex items-center gap-2 px-5 py-4">
           <Logo className="h-7 w-auto" />
           <span className="text-sm font-semibold">Super Admin</span>
@@ -55,10 +55,10 @@ export function Layout() {
               to={to}
               end={end}
               className={({ isActive }) =>
-                `flex items-center gap-2.5 rounded-[var(--radius)] px-3 py-2 text-sm font-medium transition-colors ${
+                `flex items-center gap-2.5 rounded-(--radius) px-3 py-2 text-sm font-medium transition-colors ${
                   isActive
-                    ? "bg-[var(--color-primary)] text-[var(--color-primary-foreground)]"
-                    : "text-[var(--color-foreground)] hover:bg-[var(--color-background)]"
+                    ? "bg-(--color-primary) text-(--color-primary-foreground)"
+                    : "text-(--color-foreground) hover:bg-(--color-background)"
                 }`
               }
             >
@@ -67,12 +67,12 @@ export function Layout() {
             </NavLink>
           ))}
         </nav>
-        <div className="border-t border-[var(--color-border)] p-3">
+        <div className="border-t border-(--color-border) p-3">
           <div className="mb-2 flex items-center gap-2">
             <Avatar className="h-8 w-8">
               <AvatarFallback>{initial}</AvatarFallback>
             </Avatar>
-            <span className="truncate text-xs text-[var(--color-muted-foreground)]">
+            <span className="truncate text-xs text-(--color-muted-foreground)">
               {email}
             </span>
           </div>

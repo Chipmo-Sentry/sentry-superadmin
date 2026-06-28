@@ -24,7 +24,7 @@ export function LoginPage() {
   // Still checking the existing session → avoid flashing the form.
   if (user === null) {
     return (
-      <div className="grid h-full place-items-center bg-[var(--color-muted)]">
+      <div className="grid h-full place-items-center bg-(--color-muted)">
         <Spinner />
       </div>
     );
@@ -53,7 +53,7 @@ export function LoginPage() {
   }
 
   return (
-    <div className="relative grid h-full place-items-center overflow-hidden bg-[var(--color-background)] p-4">
+    <div className="relative grid h-full place-items-center overflow-hidden bg-(--color-background) p-4">
       <div className="sentry-aurora" aria-hidden="true" />
       <Card className="relative z-10 w-full max-w-sm">
         <CardContent className="space-y-6 p-8">
@@ -85,7 +85,7 @@ export function LoginPage() {
               />
             </Field>
             {error && (
-              <p className="text-sm text-[var(--color-danger)]">{error}</p>
+              <p className="text-sm text-(--color-danger)">{error}</p>
             )}
             <Button
               type="submit"

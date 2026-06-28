@@ -162,7 +162,7 @@ export function PipelinePage() {
   );
 
   if (error && !alerts)
-    return <p className="p-8 text-[var(--color-danger)]">{error}</p>;
+    return <p className="p-8 text-(--color-danger)">{error}</p>;
   if (!alerts)
     return (
       <div className="p-8">
@@ -179,10 +179,10 @@ export function PipelinePage() {
       <div className="flex items-center justify-between gap-3">
         <div>
           <div className="flex items-center gap-2">
-            <Workflow className="h-6 w-6 text-[var(--color-primary)]" />
+            <Workflow className="h-6 w-6 text-(--color-primary)" />
             <h1 className="text-2xl font-semibold">Урсгал</h1>
           </div>
-          <p className="mt-1 text-sm text-[var(--color-muted-foreground)]">
+          <p className="mt-1 text-sm text-(--color-muted-foreground)">
             Асуудалтай бичлэг бүрийн аялал: камер → зан үйл (YOLO/engine) → VLM
             шалгалт → шийдвэр → хяналт. Мөр дээр дарж дэлгэрэнгүйг үзнэ.
           </p>
@@ -193,7 +193,7 @@ export function PipelinePage() {
         </Button>
       </div>
 
-      {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-sm text-(--color-danger)">{error}</p>}
 
       <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
         <Kpi label="Бичлэг (сүүлийн)" value={String(alerts.length)} />
@@ -238,7 +238,7 @@ export function PipelinePage() {
           ))}
         </Select>
         <div className="flex items-center gap-1.5">
-          <span className="text-xs text-[var(--color-muted-foreground)]">Огноо</span>
+          <span className="text-xs text-(--color-muted-foreground)">Огноо</span>
           <Input
             type="date"
             value={dateFrom}
@@ -246,7 +246,7 @@ export function PipelinePage() {
             className="w-auto"
             aria-label="Эхлэх огноо"
           />
-          <span className="text-xs text-[var(--color-muted-foreground)]">–</span>
+          <span className="text-xs text-(--color-muted-foreground)">–</span>
           <Input
             type="date"
             value={dateTo}
@@ -272,7 +272,7 @@ export function PipelinePage() {
             Цэвэрлэх
           </Button>
         )}
-        <span className="ml-auto text-xs text-[var(--color-muted-foreground)]">
+        <span className="ml-auto text-xs text-(--color-muted-foreground)">
           {filtered.length} / {alerts.length}
         </span>
       </div>
@@ -280,16 +280,16 @@ export function PipelinePage() {
       {/* Trace table */}
       {filtered.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center text-[var(--color-muted-foreground)]">
+          <CardContent className="p-8 text-center text-(--color-muted-foreground)">
             {alerts.length === 0
               ? "Асуудалтай бичлэг алга."
               : "Шүүлтэд тохирох бичлэг алга."}
           </CardContent>
         </Card>
       ) : (
-        <div className="overflow-x-auto rounded-lg border border-[var(--color-border)]">
+        <div className="overflow-x-auto rounded-lg border border-(--color-border)">
           <table className="w-full text-sm">
-            <thead className="border-b border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+            <thead className="border-b border-(--color-border) bg-(--color-muted) text-xs uppercase tracking-wider text-(--color-muted-foreground)">
               <tr>
                 <th className="px-3 py-2 text-left font-medium">Бичлэг</th>
                 <th className="px-3 py-2 text-left font-medium">Камер</th>
@@ -309,17 +309,17 @@ export function PipelinePage() {
                   <tr
                     key={a.id}
                     onClick={() => setSelected(a)}
-                    className="cursor-pointer border-t border-[var(--color-border)] hover:bg-[var(--color-muted)]/50"
+                    className="cursor-pointer border-t border-(--color-border) hover:bg-(--color-muted)/50"
                   >
                     <td className="px-3 py-2.5 align-top">
                       <div className="font-mono text-xs">{a.id.slice(0, 8)}</div>
-                      <div className="text-xs text-[var(--color-muted-foreground)]">
+                      <div className="text-xs text-(--color-muted-foreground)">
                         {fmtTime(a.created_at)}
                       </div>
                     </td>
                     <td className="px-3 py-2.5 align-top">
                       <div className="font-medium">{a.camera_name ?? "—"}</div>
-                      <div className="text-xs text-[var(--color-muted-foreground)]">
+                      <div className="text-xs text-(--color-muted-foreground)">
                         {a.organization_name}
                         {a.store_name ? ` · ${a.store_name}` : ""}
                       </div>
@@ -327,26 +327,26 @@ export function PipelinePage() {
                     <td className="px-3 py-2.5 align-top">
                       <div>{triggerLabel(a.triggered_by)}</div>
                       {a.peak_risk_pct != null && (
-                        <div className="text-xs text-[var(--color-muted-foreground)]">
+                        <div className="text-xs text-(--color-muted-foreground)">
                           peak {a.peak_risk_pct.toFixed(0)}%
                         </div>
                       )}
                     </td>
                     <td className="max-w-xs px-3 py-2.5 align-top">
                       {behaviors.length === 0 ? (
-                        <span className="text-xs text-[var(--color-muted-foreground)]">—</span>
+                        <span className="text-xs text-(--color-muted-foreground)">—</span>
                       ) : (
                         <div className="flex flex-wrap gap-1">
                           {behaviors.slice(0, 3).map((b) => (
                             <span
                               key={b}
-                              className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 font-mono text-[11px]"
+                              className="rounded bg-(--color-muted) px-1.5 py-0.5 font-mono text-[11px]"
                             >
                               {b}
                             </span>
                           ))}
                           {behaviors.length > 3 && (
-                            <span className="text-[11px] text-[var(--color-muted-foreground)]">
+                            <span className="text-[11px] text-(--color-muted-foreground)">
                               +{behaviors.length - 3}
                             </span>
                           )}
@@ -355,7 +355,7 @@ export function PipelinePage() {
                     </td>
                     <td className="max-w-xs px-3 py-2.5 align-top">
                       <div>{catLabel(a)}</div>
-                      <div className="text-xs text-[var(--color-muted-foreground)]">
+                      <div className="text-xs text-(--color-muted-foreground)">
                         {a.confidence.toFixed(2)} · {a.model_name} ·{" "}
                         {a.inference_latency_ms}ms
                       </div>
@@ -367,7 +367,7 @@ export function PipelinePage() {
                       {vrd ? (
                         <Pill tone={vrd.tone}>{vrd.label}</Pill>
                       ) : (
-                        <span className="text-xs text-[var(--color-muted-foreground)]">
+                        <span className="text-xs text-(--color-muted-foreground)">
                           Хүлээгдэж
                         </span>
                       )}
@@ -387,8 +387,8 @@ export function PipelinePage() {
 
 function Kpi({ label, value, accent }: { label: string; value: string; accent?: string }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] p-3">
-      <div className="text-xs text-[var(--color-muted-foreground)]">{label}</div>
+    <div className="rounded-lg border border-(--color-border) p-3">
+      <div className="text-xs text-(--color-muted-foreground)">{label}</div>
       <div className="mt-0.5 text-xl font-semibold" style={accent ? { color: accent } : undefined}>
         {value}
       </div>
@@ -407,8 +407,8 @@ function Stage({
   children: React.ReactNode;
 }) {
   return (
-    <div className="rounded-lg border border-[var(--color-border)] p-3">
-      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-[var(--color-muted-foreground)]">
+    <div className="rounded-lg border border-(--color-border) p-3">
+      <div className="mb-1.5 flex items-center gap-1.5 text-xs font-medium uppercase tracking-wide text-(--color-muted-foreground)">
         {icon}
         {title}
       </div>
@@ -420,7 +420,7 @@ function Stage({
 function Row({ k, v }: { k: string; v: React.ReactNode }) {
   return (
     <div className="flex justify-between gap-3">
-      <span className="text-[var(--color-muted-foreground)]">{k}</span>
+      <span className="text-(--color-muted-foreground)">{k}</span>
       <span className="text-right">{v}</span>
     </div>
   );
@@ -441,12 +441,12 @@ function AlertTraceModal({
           <>
             <ModalHeader>
               <ModalTitle className="flex flex-wrap items-center gap-2">
-                <Bell className="h-4 w-4 text-[var(--color-primary)]" />
+                <Bell className="h-4 w-4 text-(--color-primary)" />
                 Бичлэгийн аялал
-                <code className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs font-normal">
+                <code className="rounded bg-(--color-muted) px-1.5 py-0.5 text-xs font-normal">
                   {a.id.slice(0, 8)}
                 </code>
-                <span className="text-sm font-normal text-[var(--color-muted-foreground)]">
+                <span className="text-sm font-normal text-(--color-muted-foreground)">
                   {new Date(a.created_at).toLocaleString("mn-MN")}
                 </span>
               </ModalTitle>
@@ -468,7 +468,7 @@ function AlertTraceModal({
               <Stage icon={<Workflow className="h-3.5 w-3.5" />} title="Зан үйл (YOLO / engine)">
                 {(a.triggered_behaviors ?? []).length === 0 &&
                 (a.triggered_sequences ?? []).length === 0 ? (
-                  <span className="text-[var(--color-muted-foreground)]">
+                  <span className="text-(--color-muted-foreground)">
                     Зан үйл бүртгэгдээгүй (гар оруулга байж магадгүй).
                   </span>
                 ) : (
@@ -478,7 +478,7 @@ function AlertTraceModal({
                         {a.triggered_behaviors!.map((b) => (
                           <span
                             key={b}
-                            className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 font-mono text-[11px]"
+                            className="rounded bg-(--color-muted) px-1.5 py-0.5 font-mono text-[11px]"
                           >
                             {b}
                           </span>
@@ -493,7 +493,7 @@ function AlertTraceModal({
                         {a.triggered_behavior_detail!.map((d, i) => (
                           <div
                             key={i}
-                            className="flex justify-between gap-3 text-xs text-[var(--color-muted-foreground)]"
+                            className="flex justify-between gap-3 text-xs text-(--color-muted-foreground)"
                           >
                             <span className="font-mono">{d.key}</span>
                             <span>
@@ -512,7 +512,7 @@ function AlertTraceModal({
                 <Row k="Итгэл" v={a.confidence.toFixed(2)} />
                 <Row k="Модель" v={`${a.model_name} · ${a.inference_latency_ms}ms`} />
                 {a.reasoning && (
-                  <p className="mt-1 rounded bg-[var(--color-muted)] px-2 py-1.5 text-xs leading-relaxed">
+                  <p className="mt-1 rounded bg-(--color-muted) px-2 py-1.5 text-xs leading-relaxed">
                     {a.reasoning}
                   </p>
                 )}
@@ -528,7 +528,7 @@ function AlertTraceModal({
                         {VERDICT[a.feedback_verdict].label}
                       </Pill>
                     ) : (
-                      <span className="text-[var(--color-muted-foreground)]">Хүлээгдэж</span>
+                      <span className="text-(--color-muted-foreground)">Хүлээгдэж</span>
                     )
                   }
                 />

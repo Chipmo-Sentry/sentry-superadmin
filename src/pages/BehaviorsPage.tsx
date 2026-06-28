@@ -301,7 +301,7 @@ export function BehaviorsPage() {
   );
 
   if (err && !data)
-    return <p className="p-8 text-[var(--color-danger)]">{err}</p>;
+    return <p className="p-8 text-(--color-danger)">{err}</p>;
   if (!data) {
     return (
       <div className="p-8">
@@ -317,10 +317,10 @@ export function BehaviorsPage() {
       <div className="mb-6 flex items-start justify-between gap-4">
         <div>
           <div className="mb-2 flex items-center gap-2">
-            <Brain className="h-6 w-6 text-[var(--color-primary)]" />
+            <Brain className="h-6 w-6 text-(--color-primary)" />
             <h1 className="text-2xl font-semibold">Зан үйлийн engine v2</h1>
           </div>
-          <p className="max-w-3xl text-sm text-[var(--color-muted-foreground)]">
+          <p className="max-w-3xl text-sm text-(--color-muted-foreground)">
             AI {detectorCount} / {data.dimensions.length} детектортой шалгуураар
             0–100 эрсдэлийн оноо тооцож, дараалал илрэхэд нэмэлт оноо өгнө. Хүснэгтийн
             мөр дээр дарж жин, идэвх, нарийн тохиргоог засна — sentry-ai ~30 секундэд
@@ -334,7 +334,7 @@ export function BehaviorsPage() {
         </Button>
       </div>
 
-      {err && <p className="mb-4 text-sm text-[var(--color-danger)]">{err}</p>}
+      {err && <p className="mb-4 text-sm text-(--color-danger)">{err}</p>}
 
       {/* All criteria — one filterable/sortable grid; click a row to edit. */}
       <DataGrid<CritRow>
@@ -357,7 +357,7 @@ export function BehaviorsPage() {
           },
         }}
       />
-      <p className="mt-2 text-xs text-[var(--color-muted-foreground)]">
+      <p className="mt-2 text-xs text-(--color-muted-foreground)">
         Мөр дээр дарж засна. Толгойн ⋮ / шүүлтүүрээр эрэмбэлж, шүүж болно.
       </p>
 
@@ -382,17 +382,17 @@ export function BehaviorsPage() {
               {data.sequences.map((s) => (
                 <li
                   key={s.key}
-                  className="flex items-center justify-between gap-3 rounded-md border border-[var(--color-border)] px-3 py-2"
+                  className="flex items-center justify-between gap-3 rounded-md border border-(--color-border) px-3 py-2"
                 >
                   <span className="flex flex-wrap items-center gap-1.5 text-sm">
                     {s.pattern.map((p, i) => (
                       <span key={i} className="flex items-center gap-1.5">
                         {i > 0 && (
-                          <span className="text-[var(--color-muted-foreground)]">
+                          <span className="text-(--color-muted-foreground)">
                             →
                           </span>
                         )}
-                        <code className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs">
+                        <code className="rounded bg-(--color-muted) px-1.5 py-0.5 text-xs">
                           {p}
                         </code>
                       </span>
@@ -516,7 +516,7 @@ function EditCriterionModal({
             <ModalHeader>
               <ModalTitle className="flex flex-wrap items-center gap-2">
                 {dim.label_mn}
-                <code className="rounded bg-[var(--color-muted)] px-1.5 py-0.5 text-xs font-normal">
+                <code className="rounded bg-(--color-muted) px-1.5 py-0.5 text-xs font-normal">
                   {dim.key}
                 </code>
                 {dim.has_detector ? (
@@ -576,7 +576,7 @@ function EditCriterionModal({
               </div>
 
               {dim.has_detector && paramKeys.length > 0 && (
-                <div className="space-y-3 rounded-md border border-[var(--color-border)] p-3">
+                <div className="space-y-3 rounded-md border border-(--color-border) p-3">
                   <div className="text-sm font-medium">Нарийн тохиргоо</div>
                   <div className="grid grid-cols-1 gap-3 sm:grid-cols-2">
                     {paramKeys.map((pk) => (
@@ -601,7 +601,7 @@ function EditCriterionModal({
               )}
 
               {!dim.has_detector && (
-                <p className="rounded-md bg-[var(--color-muted)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+                <p className="rounded-md bg-(--color-muted) px-3 py-2 text-xs text-(--color-muted-foreground)">
                   Энэ шалгуурын детектор код sentry-ai-д хараахан нэмэгдээгүй тул
                   оноо нэмэхгүй. Идэвх/жин хадгалагдах ч детектор бэлэн болмогц
                   ажиллана.
@@ -616,7 +616,7 @@ function EditCriterionModal({
                     onClick={() => void remove()}
                     disabled={saving}
                   >
-                    <Trash2 className="h-4 w-4 text-[var(--color-danger)]" />
+                    <Trash2 className="h-4 w-4 text-(--color-danger)" />
                     Устгах
                   </Button>
                 ) : (
@@ -740,7 +740,7 @@ function GlobalConfigSection({
               ) : (
                 <ChevronRight className="h-4 w-4" />
               )}
-              <SlidersHorizontal className="h-4 w-4 text-[var(--color-primary)]" />
+              <SlidersHorizontal className="h-4 w-4 text-(--color-primary)" />
               Глобал тохиргоо — эрсдэлийн босго ба engine
             </CardTitle>
             <CardDescription className="mt-1">
@@ -754,19 +754,19 @@ function GlobalConfigSection({
       {open && (
         <CardContent className="space-y-8">
           {/* Plain-language mental model — what the score IS, in one breath. */}
-          <div className="flex gap-3 rounded-lg border border-[var(--color-border)] bg-[var(--color-muted)]/40 p-4">
-            <Info className="mt-0.5 h-5 w-5 shrink-0 text-[var(--color-primary)]" />
-            <p className="text-sm leading-relaxed text-[var(--color-muted-foreground)]">
+          <div className="flex gap-3 rounded-lg border border-(--color-border) bg-(--color-muted)/40 p-4">
+            <Info className="mt-0.5 h-5 w-5 shrink-0 text-(--color-primary)" />
+            <p className="text-sm leading-relaxed text-(--color-muted-foreground)">
               Систем камер дээрх{" "}
-              <strong className="font-medium text-[var(--color-foreground)]">
+              <strong className="font-medium text-(--color-foreground)">
                 хүн бүрд 0–100 «суспиц оноо»
               </strong>{" "}
               өгнө: сэжигтэй зан илрэх тутам өснө, тайван үед аажмаар буурна. Доорх{" "}
-              <strong className="font-medium text-[var(--color-foreground)]">босго</strong>{" "}
+              <strong className="font-medium text-(--color-foreground)">босго</strong>{" "}
               тэр оноог түвшин болгон хувааж,{" "}
-              <strong className="font-medium text-[var(--color-foreground)]">Ноцтой</strong>{" "}
+              <strong className="font-medium text-(--color-foreground)">Ноцтой</strong>{" "}
               түвшинд хүрэхэд автомат сэрэмжлүүлэг үүснэ.{" "}
-              <strong className="font-medium text-[var(--color-foreground)]">Engine</strong>{" "}
+              <strong className="font-medium text-(--color-foreground)">Engine</strong>{" "}
               хэсэг нь оноо хэрхэн өсөж, буурахыг нарийн тохируулна.
             </p>
           </div>
@@ -806,29 +806,29 @@ function GlobalConfigSection({
             </div>
             <div className="mt-3 flex items-start gap-2.5 rounded-lg border border-red-500/30 bg-red-500/5 p-3">
               <AlertTriangle className="mt-0.5 h-4 w-4 shrink-0 text-red-400" />
-              <p className="text-xs leading-relaxed text-[var(--color-muted-foreground)]">
+              <p className="text-xs leading-relaxed text-(--color-muted-foreground)">
                 Оноо{" "}
-                <strong className="font-medium text-[var(--color-foreground)]">
+                <strong className="font-medium text-(--color-foreground)">
                   {highMax}
                 </strong>
                 -д хүрсэн хүн илэрвэл → автоматаар бичлэг (clip) огтлогдож, AI (VLM)
                 давхар шалгаж,{" "}
-                <strong className="font-medium text-[var(--color-foreground)]">
+                <strong className="font-medium text-(--color-foreground)">
                   сэрэмжлүүлэг
                 </strong>{" "}
                 үүснэ. Энэ тоог{" "}
-                <strong className="font-medium text-[var(--color-foreground)]">
+                <strong className="font-medium text-(--color-foreground)">
                   бууруулбал
                 </strong>{" "}
                 илүү мэдрэмжтэй (олон alert, VLM зардал ↑),{" "}
-                <strong className="font-medium text-[var(--color-foreground)]">
+                <strong className="font-medium text-(--color-foreground)">
                   өсгөвөл
                 </strong>{" "}
                 хатуу (цөөн alert, алдах эрсдэл ↑).
               </p>
             </div>
             {!thresholdValid && (
-              <p className="mt-3 text-xs text-[var(--color-danger)]">
+              <p className="mt-3 text-xs text-(--color-danger)">
                 Босгууд өсөх дарааллаар байх ёстой: Бага &lt; Дунд &lt; Өндөр.
               </p>
             )}
@@ -841,13 +841,13 @@ function GlobalConfigSection({
               title="Engine нарийн тохиргоо"
               suffix="мэргэжлийн"
             />
-            <p className="-mt-1 mb-4 text-xs text-[var(--color-muted-foreground)]">
+            <p className="-mt-1 mb-4 text-xs text-(--color-muted-foreground)">
               Анхдагч утгууд зөв тохируулагдсан. Зөвхөн илрүүлэлтийг нарийн
               тааруулах шаардлагатай үед өөрчилнө.
             </p>
-            <div className="overflow-hidden rounded-lg border border-[var(--color-border)]">
+            <div className="overflow-hidden rounded-lg border border-(--color-border)">
               <table className="w-full text-sm">
-                <thead className="border-b border-[var(--color-border)] bg-[var(--color-muted)] text-xs uppercase tracking-wider text-[var(--color-muted-foreground)]">
+                <thead className="border-b border-(--color-border) bg-(--color-muted) text-xs uppercase tracking-wider text-(--color-muted-foreground)">
                   <tr>
                     <th className="px-3 py-2 text-left font-medium">Параметр</th>
                     <th className="hidden px-3 py-2 text-left font-medium sm:table-cell">
@@ -860,10 +860,10 @@ function GlobalConfigSection({
                 <tbody>
                   {ENGINE_GROUPS.map((group) => (
                     <Fragment key={group.title}>
-                      <tr className="bg-[var(--color-muted)]/40">
+                      <tr className="bg-(--color-muted)/40">
                         <td
                           colSpan={4}
-                          className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-[var(--color-muted-foreground)]"
+                          className="px-3 py-1.5 text-[11px] font-medium uppercase tracking-wider text-(--color-muted-foreground)"
                         >
                           {group.title}
                         </td>
@@ -871,18 +871,18 @@ function GlobalConfigSection({
                       {group.fields.map((f) => (
                         <tr
                           key={f.key}
-                          className="border-t border-[var(--color-border)] align-top"
+                          className="border-t border-(--color-border) align-top"
                         >
                           <td className="px-3 py-2.5">
                             <div className="font-medium">{f.label}</div>
-                            <div className="text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+                            <div className="text-[10px] uppercase tracking-wide text-(--color-muted-foreground)">
                               {f.unit}
                             </div>
-                            <p className="mt-1 text-xs leading-relaxed text-[var(--color-muted-foreground)] sm:hidden">
+                            <p className="mt-1 text-xs leading-relaxed text-(--color-muted-foreground) sm:hidden">
                               {f.help}
                             </p>
                           </td>
-                          <td className="hidden max-w-md px-3 py-2.5 text-xs leading-relaxed text-[var(--color-muted-foreground)] sm:table-cell">
+                          <td className="hidden max-w-md px-3 py-2.5 text-xs leading-relaxed text-(--color-muted-foreground) sm:table-cell">
                             {f.help}
                           </td>
                           <td className="px-3 py-2.5 text-right">
@@ -899,10 +899,10 @@ function GlobalConfigSection({
                                   [f.key]: Number(e.target.value) || 0,
                                 }))
                               }
-                              className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+                              className="w-20 rounded-md border border-(--color-border) bg-(--color-background) px-2 py-1 text-right font-mono text-sm focus:border-(--color-ring) focus:outline-none focus:ring-2 focus:ring-(--color-ring)/30"
                             />
                           </td>
-                          <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-[var(--color-muted-foreground)]">
+                          <td className="whitespace-nowrap px-3 py-2.5 text-right font-mono text-xs text-(--color-muted-foreground)">
                             {f.min}–{f.max}
                           </td>
                         </tr>
@@ -915,9 +915,9 @@ function GlobalConfigSection({
           </section>
 
           {/* Save / revert bar */}
-          <div className="flex items-center justify-end gap-3 border-t border-[var(--color-border)] pt-4">
+          <div className="flex items-center justify-end gap-3 border-t border-(--color-border) pt-4">
             {savedAt && !dirty && (
-              <span className="mr-auto text-xs text-[var(--color-success)]">
+              <span className="mr-auto text-xs text-(--color-success)">
                 ✓ Хадгалагдсан · {savedAt}
               </span>
             )}
@@ -1000,7 +1000,7 @@ function AddCriterionModal({
           <ModalTitle>Шинэ сэжиг шалгуур</ModalTitle>
         </ModalHeader>
         <form className="space-y-4" onSubmit={onSubmit}>
-          <p className="rounded-md bg-[var(--color-muted)] px-3 py-2 text-xs text-[var(--color-muted-foreground)]">
+          <p className="rounded-md bg-(--color-muted) px-3 py-2 text-xs text-(--color-muted-foreground)">
             Анхаар: AI энэ шалгуурыг бодитоор илрүүлэхийн тулд sentry-ai-д тухайн
             түлхүүрийн <strong>детектор код</strong> нэмэгдсэн байх ёстой. Тэр
             болтол шалгуур бүртгэгдэх ч оноо нэмэхгүй.
@@ -1019,7 +1019,7 @@ function AddCriterionModal({
             />
           </Field>
           {key && !keyValid && (
-            <p className="text-xs text-[var(--color-danger)]">
+            <p className="text-xs text-(--color-danger)">
               Зөвхөн a–z, 0–9, _; үсгээр эхэлж 2–40 тэмдэгт.
             </p>
           )}
@@ -1036,7 +1036,7 @@ function AddCriterionModal({
               value={category}
               onChange={(e) => setCategory(e.target.value)}
               disabled={saving}
-              className="w-full rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-3 py-2 text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+              className="w-full rounded-md border border-(--color-border) bg-(--color-background) px-3 py-2 text-sm focus:border-(--color-ring) focus:outline-none focus:ring-2 focus:ring-(--color-ring)/30"
             >
               {CATEGORIES.map((c) => (
                 <option key={c.value} value={c.value}>
@@ -1094,10 +1094,10 @@ function SectionTitle({
 }) {
   return (
     <div className="mb-3 flex items-center gap-2">
-      <Icon className="h-4 w-4 text-[var(--color-primary)]" />
+      <Icon className="h-4 w-4 text-(--color-primary)" />
       <h3 className="text-sm font-semibold">{title}</h3>
       {suffix && (
-        <span className="rounded-full border border-[var(--color-border)] px-2 py-0.5 text-[10px] uppercase tracking-wide text-[var(--color-muted-foreground)]">
+        <span className="rounded-full border border-(--color-border) px-2 py-0.5 text-[10px] uppercase tracking-wide text-(--color-muted-foreground)">
           {suffix}
         </span>
       )}
@@ -1125,17 +1125,17 @@ function ThresholdBar({
     { name: labels.CRITICAL ?? "Ноцтой", range: `≥ ${high}`, w: 100 - high, fill: "bg-red-500/20", text: "text-red-400" },
   ];
   return (
-    <div className="flex h-20 w-full overflow-hidden rounded-lg border border-[var(--color-border)]">
+    <div className="flex h-20 w-full overflow-hidden rounded-lg border border-(--color-border)">
       {segs.map((s, i) => (
         <div
           key={i}
           style={{ flexGrow: Math.max(s.w, 4) }}
           className={`flex min-w-[64px] basis-0 flex-col items-center justify-center gap-0.5 px-1 text-center ${s.fill} ${
-            i > 0 ? "border-l border-[var(--color-border)]" : ""
+            i > 0 ? "border-l border-(--color-border)" : ""
           }`}
         >
           <span className={`text-xs font-medium ${s.text}`}>{s.name}</span>
-          <span className="font-mono text-[11px] text-[var(--color-muted-foreground)]">
+          <span className="font-mono text-[11px] text-(--color-muted-foreground)">
             {s.range}
           </span>
         </div>
@@ -1162,7 +1162,7 @@ function BoundaryInput({
   return (
     <div
       className={`rounded-lg border p-3 ${
-        alert ? "border-red-500/40 bg-red-500/5" : "border-[var(--color-border)]"
+        alert ? "border-red-500/40 bg-red-500/5" : "border-(--color-border)"
       }`}
     >
       <div className="mb-2 flex items-center gap-1.5 text-xs">
@@ -1183,9 +1183,9 @@ function BoundaryInput({
           value={value}
           disabled={disabled}
           onChange={(e) => onChange(Number(e.target.value) || 0)}
-          className="w-20 rounded-md border border-[var(--color-border)] bg-[var(--color-background)] px-2 py-1 text-right font-mono text-sm focus:border-[var(--color-ring)] focus:outline-none focus:ring-2 focus:ring-[var(--color-ring)]/30"
+          className="w-20 rounded-md border border-(--color-border) bg-(--color-background) px-2 py-1 text-right font-mono text-sm focus:border-(--color-ring) focus:outline-none focus:ring-2 focus:ring-(--color-ring)/30"
         />
-        <span className="text-xs text-[var(--color-muted-foreground)]">
+        <span className="text-xs text-(--color-muted-foreground)">
           оноонд шилжинэ
         </span>
       </div>

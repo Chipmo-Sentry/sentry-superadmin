@@ -82,7 +82,7 @@ export function UsersPage() {
         </Button>
       </div>
 
-      {error && <p className="text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-(--color-danger)">{error}</p>}
 
       {users === null && !error ? (
         <Spinner />
@@ -106,7 +106,7 @@ export function UsersPage() {
                       <TableCell className="font-medium">
                         {u.email}
                         {isSelf && (
-                          <span className="ml-2 text-xs text-[var(--color-muted-foreground)]">
+                          <span className="ml-2 text-xs text-(--color-muted-foreground)">
                             (та)
                           </span>
                         )}
@@ -296,7 +296,7 @@ function InviteUserModal({
             />
             Супер админ эрх олгох
           </label>
-          {error && <p className="text-sm text-[var(--color-danger)]">{error}</p>}
+          {error && <p className="text-sm text-(--color-danger)">{error}</p>}
           <ModalFooter>
             <Button type="button" variant="ghost" onClick={onClose} disabled={saving}>
               Болих

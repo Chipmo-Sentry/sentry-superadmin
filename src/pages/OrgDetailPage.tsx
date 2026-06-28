@@ -43,7 +43,7 @@ export function OrgDetailPage() {
     <div className="space-y-6 p-8">
       <Link
         to="/orgs"
-        className="inline-flex items-center gap-1.5 text-sm text-[var(--color-muted-foreground)] hover:text-[var(--color-foreground)]"
+        className="inline-flex items-center gap-1.5 text-sm text-(--color-muted-foreground) hover:text-(--color-foreground)"
       >
         <ArrowLeft className="h-4 w-4" />
         Байгууллагууд руу
@@ -54,7 +54,7 @@ export function OrgDetailPage() {
         {org && <Badge tone="neutral">{org.slug}</Badge>}
       </div>
 
-      {error && <p className="text-[var(--color-danger)]">{error}</p>}
+      {error && <p className="text-(--color-danger)">{error}</p>}
 
       <Card>
         <CardContent className="p-0">
